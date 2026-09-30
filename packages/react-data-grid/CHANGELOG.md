@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.2
+
+### Patch Changes
+
+- Fix address column not rendering data in correct format
+
 ## 1.0.1
 
 ### Patch Changes

@@ -32,9 +32,19 @@ const PLAYGROUND_PROPS: ReactDataGridProps<AnyRow> = {
   direction: 'auto',
 };
 
-const SERVER_COLUMNS: ColumnDef<AnyRow>[] = Object.keys(sample50[0] ?? {}).map((field) => ({
-  field,
-}));
+/** Shows `{ city, country }` as "City, Country" instead of the default key summary. */
+function formatAddress(value: unknown): string {
+  const { city, country } = (value ?? {}) as { city?: unknown; country?: unknown };
+  return [city, country].filter(Boolean).join(', ');
+}
+
+function buildColumns(row: object | undefined): ColumnDef<AnyRow>[] {
+  return Object.keys(row ?? {}).map((field) =>
+    field === 'address' ? { field, format: formatAddress } : { field },
+  );
+}
+
+const SERVER_COLUMNS = buildColumns(sample50[0]);
 
 const fetchData = createFakeServer(sample50, () => ({ delayMs: 600 }));
 
@@ -54,6 +64,8 @@ export function App() {
     props.columns = SERVER_COLUMNS;
   } else {
     props.data = data as AnyRow[] | null;
+    const first = (data as AnyRow[] | null)?.[0];
+    if (first && 'address' in first) props.columns = buildColumns(first);
   }
 
   return (
