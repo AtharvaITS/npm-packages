@@ -65,7 +65,8 @@ jobs:
           if npm view "${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}" version >/dev/null 2>&1; then
             echo "Version already on npm, skipping publish."
           else
-            npm publish -w "$PKG_DIR"
+            # Stages the release; approve it with 2FA via `npm stage approve <id>` or on npmjs.com
+            npm stage publish -w "$PKG_DIR"
           fi
 
       - name: Create tag and GitHub Release
