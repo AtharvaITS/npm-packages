@@ -1,0 +1,8 @@
+[
+  {
+    "name": "@atharvaits/react-data-grid (JS + CSS, gzip)",
+    "path": ["dist/index.js", "dist/styles.css"],
+    "limit": "60 KB",
+    "gzip": true
+  }
+]

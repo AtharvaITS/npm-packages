@@ -1,0 +1,35 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.vite/
+*.tsbuildinfo
+*.tgz
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Secrets and credentials (this is a public repository)
+.env*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local tool settings
+.claude/settings.local.json
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

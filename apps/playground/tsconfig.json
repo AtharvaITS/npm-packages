@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "paths": {
+      "@atharvaits/react-data-grid": ["../../packages/react-data-grid/src/index.ts"]
+    }
+  },
+  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts"]
+}

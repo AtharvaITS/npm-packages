@@ -1,0 +1,84 @@
+name: Release
+
+# On every push to main: if packages/react-data-grid/package.json has a version
+# that has no tag yet, run the checks, publish to npm (when enabled), then create
+# the git tag and GitHub Release. Pushes that don't change the version do nothing.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # create the tag and GitHub Release
+  id-token: write # npm trusted publishing (OIDC) and provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      PKG_DIR: packages/react-data-grid
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: meta
+        run: |
+          NAME=$(node -p "require('./$PKG_DIR/package.json').name")
+          VERSION=$(node -p "require('./$PKG_DIR/package.json').version")
+          TAG="$NAME@$VERSION"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.meta.outputs.tagged == 'false'
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install and verify
+        if: steps.meta.outputs.tagged == 'false'
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run build
+          npm run size
+
+      # Off until the repository variable NPM_PUBLISH is set to "true"
+      # (Settings → Secrets and variables → Actions → Variables).
+      - name: Publish to npm (trusted publishing)
+        if: steps.meta.outputs.tagged == 'false' && vars.NPM_PUBLISH == 'true'
+        run: |
+          npm install -g npm@latest   # trusted publishing needs npm 11.5.1 or later
+          if npm view "${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}" version >/dev/null 2>&1; then
+            echo "Version already on npm, skipping publish."
+          else
+            npm publish -w "$PKG_DIR"
+          fi
+
+      - name: Create tag and GitHub Release
+        if: steps.meta.outputs.tagged == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          # Release notes = this version's section of CHANGELOG.md
+          awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{if(f)exit} f' "$PKG_DIR/CHANGELOG.md" > notes.md
+          [ -s notes.md ] || echo "Release $VERSION" > notes.md
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md

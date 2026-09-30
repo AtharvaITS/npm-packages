@@ -1,0 +1,68 @@
+/* ReactDataGrid design tokens. Override any --aits-* property in your own CSS or via the `theme` prop. */
+@layer aits {
+  .aits-root {
+    --aits-color-bg: #ffffff;
+    --aits-color-surface: #ffffff;
+    --aits-color-surface-alt: #f6f7f9;
+    --aits-color-border: #d5dae1;
+    --aits-color-text: #1b1f24;
+    --aits-color-text-muted: #545c69;
+    --aits-color-accent: #2453c9;
+    --aits-color-accent-text: #ffffff;
+    --aits-color-selected-bg: #e6eefc;
+    --aits-color-focus-ring: #2453c9;
+    --aits-color-danger: #b42318;
+    --aits-font-family:
+      system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --aits-font-size: 0.875rem;
+    --aits-radius: 8px;
+    --aits-spacing: 0.5rem;
+    --aits-row-height: 40px;
+    --aits-header-height: 44px;
+    --aits-card-gap: 16px;
+    --aits-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  }
+
+  .aits-root[data-density='compact'] {
+    --aits-row-height: 32px;
+    --aits-header-height: 36px;
+  }
+  .aits-root[data-density='comfortable'] {
+    --aits-row-height: 52px;
+    --aits-header-height: 52px;
+  }
+
+  .aits-root[data-color-scheme='dark'] {
+    --aits-color-bg: #111418;
+    --aits-color-surface: #171b21;
+    --aits-color-surface-alt: #1d222a;
+    --aits-color-border: #39414d;
+    --aits-color-text: #e7eaee;
+    --aits-color-text-muted: #a9b2bf;
+    --aits-color-accent: #86a8ff;
+    --aits-color-accent-text: #0b1020;
+    --aits-color-selected-bg: #203055;
+    --aits-color-focus-ring: #86a8ff;
+    --aits-color-danger: #ff8f85;
+    --aits-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .aits-root[data-color-scheme='auto'] {
+      --aits-color-bg: #111418;
+      --aits-color-surface: #171b21;
+      --aits-color-surface-alt: #1d222a;
+      --aits-color-border: #39414d;
+      --aits-color-text: #e7eaee;
+      --aits-color-text-muted: #a9b2bf;
+      --aits-color-accent: #86a8ff;
+      --aits-color-accent-text: #0b1020;
+      --aits-color-selected-bg: #203055;
+      --aits-color-focus-ring: #86a8ff;
+      --aits-color-danger: #ff8f85;
+      --aits-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+  }
+}

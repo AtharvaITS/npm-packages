@@ -1,0 +1,34 @@
+{
+  "name": "react-grid-monorepo",
+  "private": true,
+  "type": "module",
+  "author": "AtharvaITS",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run dev -w apps/playground",
+    "build": "npm run build -w packages/react-data-grid",
+    "build:playground": "npm run build -w apps/playground",
+    "test": "npm test -w packages/react-data-grid",
+    "test:e2e": "npm run test:e2e -w apps/playground",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc -p packages/react-data-grid/tsconfig.json --noEmit && tsc -p apps/playground/tsconfig.json --noEmit",
+    "size": "npm run size -w packages/react-data-grid",
+    "changeset": "changeset"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}
