@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
@@ -12,6 +11,46 @@ import { useIsomorphicLayoutEffect } from '../state/useIsomorphicLayoutEffect';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const GAP = 4;
+const MARGIN = 8;
+
+/**
+ * Out of flow from the very first render, so the hidden popover can never
+ * stretch its parent (a header cell, a wrapping toolbar) and skew the anchor
+ * measurement. Position and visibility are written imperatively by `position()`.
+ */
+const INITIAL_STYLE: CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  visibility: 'hidden',
+};
+
+/** True when `anchor` is scrolled out of view, or clipped away by a scrolling ancestor. */
+function isAnchorHidden(anchor: HTMLElement): boolean {
+  if (!anchor.isConnected) return true;
+  const rect = anchor.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return false;
+  let left = 0;
+  let top = 0;
+  let right = window.innerWidth;
+  let bottom = window.innerHeight;
+  for (let node = anchor.parentElement; node; node = node.parentElement) {
+    const { overflowX, overflowY } = getComputedStyle(node);
+    if (overflowX === 'visible' && overflowY === 'visible') continue;
+    const box = node.getBoundingClientRect();
+    if (overflowX !== 'visible') {
+      left = Math.max(left, box.left);
+      right = Math.min(right, box.right);
+    }
+    if (overflowY !== 'visible') {
+      top = Math.max(top, box.top);
+      bottom = Math.min(bottom, box.bottom);
+    }
+  }
+  return rect.right < left || rect.left > right || rect.bottom < top || rect.top > bottom;
+}
 
 export interface PopoverProps {
   open: boolean;
@@ -40,7 +79,6 @@ export function Popover({
   alignEnd,
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [style, setStyle] = useState<CSSProperties>({ visibility: 'hidden' });
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -48,6 +86,11 @@ export function Popover({
     const anchor = anchorRef.current;
     const el = ref.current;
     if (!anchor || !el) return;
+    // Measure the containing block's offset at 0,0: zero in the top layer, but
+    // non-zero when an ancestor with a transform/filter/contain traps `fixed`.
+    el.style.top = '0px';
+    el.style.left = '0px';
+    const origin = el.getBoundingClientRect();
     const rect = anchor.getBoundingClientRect();
     const width = el.offsetWidth;
     const height = el.offsetHeight;
@@ -55,15 +98,39 @@ export function Popover({
     const vh = window.innerHeight;
     const rtl = getComputedStyle(anchor).direction === 'rtl';
     let left = alignEnd !== rtl ? rect.right - width : rect.left;
-    left = Math.max(8, Math.min(left, vw - width - 8));
-    let top = rect.bottom + 4;
-    if (top + height > vh - 8 && rect.top - height - 4 > 8) top = rect.top - height - 4;
-    setStyle({ position: 'fixed', top, left, visibility: 'visible' });
+    left = Math.max(MARGIN, Math.min(left, vw - width - MARGIN));
+    let top = rect.bottom + GAP;
+    if (top + height > vh - MARGIN && rect.top - height - GAP > MARGIN)
+      top = rect.top - height - GAP;
+    el.style.top = `${top - origin.top}px`;
+    el.style.left = `${left - origin.left}px`;
+    el.style.visibility = 'visible';
   }, [anchorRef, alignEnd]);
 
+  // Promote to the top layer (when supported) before measuring, so the popover
+  // escapes clipping ancestors and is measured against the viewport.
   useIsomorphicLayoutEffect(() => {
     if (!open) return;
+    const el = ref.current;
+    let shown = false;
+    if (el && typeof el.showPopover === 'function') {
+      try {
+        el.setAttribute('popover', 'manual');
+        el.showPopover();
+        shown = true;
+      } catch {
+        el.removeAttribute('popover');
+      }
+    }
     position();
+    return () => {
+      if (!el || !shown) return;
+      try {
+        el.hidePopover();
+      } catch {
+        // already detached or hidden
+      }
+    };
   }, [open, position]);
 
   useEffect(() => {
@@ -80,11 +147,21 @@ export function Popover({
       if (el?.contains(target) || anchor?.contains(target)) return;
       onCloseRef.current();
     };
-    const onScrollOrResize = () => position();
+    const onScrollOrResize = () => {
+      if (anchor && isAnchorHidden(anchor)) {
+        onCloseRef.current();
+        return;
+      }
+      position();
+    };
+    const observer =
+      typeof ResizeObserver === 'function' && el ? new ResizeObserver(() => position()) : null;
+    if (el) observer?.observe(el);
     document.addEventListener('pointerdown', onPointerDown, true);
     window.addEventListener('resize', onScrollOrResize);
     window.addEventListener('scroll', onScrollOrResize, true);
     return () => {
+      observer?.disconnect();
       document.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('resize', onScrollOrResize);
       window.removeEventListener('scroll', onScrollOrResize, true);
@@ -158,7 +235,7 @@ export function Popover({
       aria-label={label}
       aria-modal={role === 'dialog' ? false : undefined}
       tabIndex={-1}
-      style={style}
+      style={INITIAL_STYLE}
       onKeyDown={onKeyDown}
     >
       {children}

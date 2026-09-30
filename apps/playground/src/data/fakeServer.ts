@@ -14,9 +14,6 @@ import type { Employee } from './sample-50';
 
 export interface FakeServerOptions {
   delayMs: number;
-  failEvery5th: boolean;
-  randomizeOrder: boolean;
-  onRequest?(req: DataRequest): void;
 }
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
@@ -108,23 +105,14 @@ function compare(a: unknown, b: unknown): number {
 }
 
 export function createFakeServer(rows: readonly Employee[], options: () => FakeServerOptions) {
-  let count = 0;
   return function fetchData(
     req: DataRequest,
     { signal }: FetchDataOptions,
   ): Promise<DataPage<Employee>> {
-    const opts = options();
-    opts.onRequest?.(req);
-    count++;
-    const shouldFail = opts.failEvery5th && count % 5 === 0;
-    const delay = opts.randomizeOrder ? 100 + Math.floor(Math.random() * 1100) : opts.delayMs;
+    const { delayMs } = options();
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        if (shouldFail) {
-          reject(new Error(`Simulated failure on request #${count}`));
-          return;
-        }
         const needle = fold(req.search.trim());
         let result = rows.filter((row) => {
           if (needle) {
@@ -155,15 +143,11 @@ export function createFakeServer(rows: readonly Employee[], options: () => FakeS
         }
         const start = req.page * req.pageSize;
         resolve({ rows: result.slice(start, start + req.pageSize), totalCount: result.length });
-      }, delay);
-      // With "randomize response order" the server ignores cancellation, so late
-      // responses really do arrive out of order and the grid must discard them.
-      if (!opts.randomizeOrder) {
-        signal.addEventListener('abort', () => {
-          clearTimeout(timer);
-          reject(new DOMException('Aborted', 'AbortError'));
-        });
-      }
+      }, delayMs);
+      signal.addEventListener('abort', () => {
+        clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      });
     });
   };
 }

@@ -1,6 +1,6 @@
 {
   "name": "@atharvaits/react-data-grid",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Show any array of records as a table, card grid, or list in React, with sorting, search, filters, paging, virtual scrolling, and selection.",
   "keywords": [
     "react",

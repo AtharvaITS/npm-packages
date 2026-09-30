@@ -28,19 +28,14 @@ test.describe('Playground (US9)', () => {
     await expect(page.getByText('1–25 of 50')).toBeVisible();
   });
 
-  test('the event log records component callbacks', async ({ page }) => {
+  test('shows only the header and the grid: no settings panel or event log', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('radio', { name: 'Grid' }).click();
-    await expect(
-      page.getByTestId('event-log').locator('[data-event="onViewChange"]').first(),
-    ).toContainText('"grid"');
-  });
-
-  test('settings panel changes apply immediately', async ({ page }) => {
-    await page.goto('/');
-    await page.getByText('Theme', { exact: true }).click();
-    await page.getByLabel('Density').selectOption('compact');
-    await expect(page.locator('.aits-root')).toHaveAttribute('data-density', 'compact');
+    await expect(page.locator('.aits-root')).toBeVisible();
+    await expect(page.getByTestId('event-log')).toHaveCount(0);
+    await expect(page.getByText('Settings', { exact: true })).toHaveCount(0);
+    const preview = await page.locator('.pg-preview').boundingBox();
+    const header = await page.locator('.pg-header').boundingBox();
+    expect(preview!.width).toBeGreaterThan(header!.width - 4);
   });
 
   test('edge-case scenario renders markup as text without errors', async ({ page }) => {

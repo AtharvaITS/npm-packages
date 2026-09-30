@@ -257,6 +257,9 @@
 
   /* ---------- Popovers / menus ---------- */
   .aits-popover {
+    /* Neutralize the UA [popover] rules (inset: 0; margin: auto), which centre the element. */
+    inset: auto;
+    margin: 0;
     z-index: 1000;
     min-width: 12rem;
     max-width: min(32rem, calc(100vw - 16px));

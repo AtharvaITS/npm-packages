@@ -18,7 +18,7 @@ export interface Scenario {
   label: string;
   /** Lazily produced so large datasets are only generated when selected. */
   data(): unknown;
-  /** Props this scenario needs in addition to the settings panel. */
+  /** Props this scenario needs in addition to the Playground defaults. */
   suggestedProps?: Partial<ReactDataGridProps<any>>;
   server?: boolean;
 }

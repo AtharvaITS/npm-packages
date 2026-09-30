@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.1
+
+### Patch Changes
+
+- Fix the column (⋮) menu, filter panel and columns picker opening far from their trigger. Pop-ups now stay out of flow while being measured, use the browser top layer where available, and follow or close with their trigger on scroll and resize.
+
 ## 1.0.0
 
 ### Major Changes

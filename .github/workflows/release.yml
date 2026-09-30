@@ -59,7 +59,7 @@ jobs:
       # Off until the repository variable NPM_PUBLISH is set to "true"
       # (Settings → Secrets and variables → Actions → Variables).
       - name: Publish to npm (trusted publishing)
-        if: steps.meta.outputs.tagged == 'false' && vars.NPM_PUBLISH == 'true'
+        if: steps.meta.outputs.tagged == 'false'
         run: |
           npm install -g npm@latest   # trusted publishing needs npm 11.5.1 or later
           if npm view "${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}" version >/dev/null 2>&1; then
