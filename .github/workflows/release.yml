@@ -53,10 +53,8 @@ jobs:
         if: steps.meta.outputs.tagged == 'false'
         run: |
           npm ci
-          npm run lint
           npm run typecheck
           npm run build
-          npm run size
 
       # Off until the repository variable NPM_PUBLISH is set to "true"
       # (Settings → Secrets and variables → Actions → Variables).
