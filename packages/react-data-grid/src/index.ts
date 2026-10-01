@@ -12,6 +12,7 @@ export type {
   CardContext,
   CardField,
   CellContext,
+  CellEdit,
   ColorScheme,
   ColumnDef,
   ColumnStateItem,

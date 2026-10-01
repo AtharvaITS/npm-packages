@@ -2,6 +2,7 @@ import { memo, type MouseEvent } from 'react';
 import { POS_COL, POS_ROW } from '../../a11y/useRovingFocus';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
+import { CellEditor, openCellEditor } from '../CellEditor';
 import {
   buildCardContext,
   getCellParts,
@@ -32,6 +33,7 @@ export const Card = memo(function Card({
   const ctx = useGrid();
   const { selection, titleColumn, imageColumn } = ctx;
   const id = ctx.rowIds[rowIndex]!;
+  const editingColumnId = ctx.editing?.rowId === id ? ctx.editing.columnId : null;
   const hasSelect = selection.mode !== 'none';
   const selected = selection.selected.has(id);
   const selectable = selection.isSelectable(rowIndex);
@@ -55,33 +57,81 @@ export const Card = memo(function Card({
   } else {
     const image = imageColumn ? getCellParts(ctx, rowIndex, imageColumn, 'grid') : undefined;
     const title = titleColumn ? getCellParts(ctx, rowIndex, titleColumn, 'grid') : undefined;
+    const imageEditing = imageColumn !== undefined && editingColumnId === imageColumn.id;
+    const titleEditing = titleColumn !== undefined && editingColumnId === titleColumn.id;
     body = (
       <>
         {image &&
-          (image.custom ? (
+          (imageEditing && imageColumn ? (
+            <div
+              className="aits-card-media"
+              onDoubleClick={(event) =>
+                openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
+              }
+            >
+              <CellEditor column={imageColumn} value={image.value} formatted={image.formatted} />
+            </div>
+          ) : image.custom ? (
             <div className="aits-card-media">{image.content}</div>
           ) : isSafeImageSrc(image.value) ? (
-            <div className="aits-card-media">
+            <div
+              className="aits-card-media"
+              onDoubleClick={(event) =>
+                imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
+              }
+            >
               <img src={image.value} alt="" loading="lazy" decoding="async" />
             </div>
           ) : (
-            <div className="aits-card-media aits-card-media-empty" aria-hidden="true" />
+            <div
+              className="aits-card-media aits-card-media-empty"
+              aria-hidden="true"
+              onDoubleClick={(event) =>
+                imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
+              }
+            />
           ))}
         <div className="aits-card-body">
           {title && (
-            <div className="aits-card-title" title={title.custom ? undefined : title.formatted}>
-              {title.content}
+            <div
+              className="aits-card-title"
+              title={titleEditing || title.custom ? undefined : title.formatted}
+              onDoubleClick={(event) =>
+                titleColumn && openCellEditor(event, ctx.startEdit, rowIndex, titleColumn.id)
+              }
+            >
+              {titleEditing && titleColumn ? (
+                <CellEditor column={titleColumn} value={title.value} formatted={title.formatted} />
+              ) : (
+                title.content
+              )}
             </div>
           )}
           {fieldColumns.length > 0 && (
             <dl className="aits-card-fields">
               {fieldColumns.map((column) => {
                 const parts = getCellParts(ctx, rowIndex, column, 'grid');
+                const fieldEditing = editingColumnId === column.id;
                 return (
                   <div className="aits-card-field" key={column.id} data-type={column.type}>
                     <dt>{column.header}</dt>
-                    <dd title={parts.custom ? undefined : parts.formatted || undefined}>
-                      {parts.content}
+                    <dd
+                      title={
+                        fieldEditing || parts.custom ? undefined : parts.formatted || undefined
+                      }
+                      onDoubleClick={(event) =>
+                        openCellEditor(event, ctx.startEdit, rowIndex, column.id)
+                      }
+                    >
+                      {fieldEditing ? (
+                        <CellEditor
+                          column={column}
+                          value={parts.value}
+                          formatted={parts.formatted}
+                        />
+                      ) : (
+                        parts.content
+                      )}
                     </dd>
                   </div>
                 );

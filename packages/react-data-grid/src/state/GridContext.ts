@@ -56,6 +56,12 @@ export interface GridContextValue<TRow = any> {
   selection: SelectionApi;
   columnActions: ColumnActions;
   activateRow(rowIndex: number, event: MouseEvent | KeyboardEvent): void;
+  /** Open cell editor, or null when no cell is being edited. */
+  editing: { rowId: RowId; columnId: string } | null;
+  startEdit(rowIndex: number, columnId: string): void;
+  /** Enter: parse the draft and call `onCellEdit` when the value is valid. */
+  commitEdit(draft: string | boolean): void;
+  cancelEdit(): void;
   announce(text: string): void;
   rowHeight: number;
   /** CSS height of the scroll area in scroll mode. */
