@@ -133,6 +133,11 @@
     accent-color: var(--aits-color-accent);
     cursor: pointer;
   }
+  .aits-cell-editor {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
 
   /* ---------- Toolbar ---------- */
   .aits-toolbar-wrap {

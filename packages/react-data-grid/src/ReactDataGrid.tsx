@@ -18,7 +18,8 @@ import {
   setColumnWidth,
   type EffectiveColumn,
 } from './core/columnState';
-import { resolveColumns } from './core/columns';
+import { getColumnValue, resolveColumns } from './core/columns';
+import { canEditColumn, parseEditedValue } from './core/editValue';
 import { isConditionActive } from './core/filter';
 import { normalizeData, resolveRowIds } from './core/normalize';
 import { clampPage, pageRange, pageSlice } from './core/paginate';
@@ -400,6 +401,57 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     [rows, rowIds, onRowActivate],
   );
 
+  const onCellEdit = props.onCellEdit;
+  const [editing, setEditing] = useState<{ rowId: RowId; columnId: string } | null>(null);
+  const startEdit = useCallback(
+    (rowIndex: number, columnId: string) => {
+      if (!onCellEdit) return;
+      const column = effective.ordered.find((item) => item.id === columnId);
+      if (!column || !canEditColumn(column)) return;
+      const rowId = rowIds[rowIndex];
+      if (rowId === undefined) return;
+      setEditing({ rowId, columnId });
+    },
+    [onCellEdit, effective.ordered, rowIds],
+  );
+  const cancelEdit = useCallback(() => {
+    setEditing(null);
+  }, []);
+  const commitEdit = useCallback(
+    (draft: string | boolean) => {
+      const current = editing;
+      setEditing(null);
+      if (!current || !onCellEdit) return;
+      const rowIndex = rowIds.indexOf(current.rowId);
+      const row = rows[rowIndex] as TRow | undefined;
+      const column = effective.ordered.find((item) => item.id === current.columnId);
+      if (row === undefined || !column || !canEditColumn(column)) return;
+      const previousValue = getColumnValue<TRow>(row, column);
+      const parsed = parseEditedValue(column, previousValue, draft);
+      if (!parsed.ok) return;
+      let nextRow: TRow | undefined;
+      if (column.valueSetter) {
+        try {
+          nextRow = column.valueSetter(row, parsed.value);
+        } catch {
+          return;
+        }
+      } else if (!column.field) {
+        return;
+      }
+      onCellEdit({
+        row,
+        rowId: current.rowId,
+        columnId: column.id,
+        field: column.field ?? column.id,
+        previousValue,
+        value: parsed.value,
+        ...(nextRow !== undefined ? { nextRow } : {}),
+      });
+    },
+    [editing, onCellEdit, rowIds, rows, effective.ordered],
+  );
+
   const clearFilters = useCallback(() => {
     api.setSearch('');
     api.setFilters([]);
@@ -427,6 +479,10 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     selection,
     columnActions,
     activateRow,
+    editing,
+    startEdit,
+    commitEdit,
+    cancelEdit,
     announce,
     rowHeight,
     scrollHeight: props.height === undefined || props.height === 'auto' ? 600 : props.height,

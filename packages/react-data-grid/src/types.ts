@@ -201,6 +201,19 @@ export interface CardContext<TRow = Record<string, unknown>> {
 
 export type ListItemContext<TRow = Record<string, unknown>> = CardContext<TRow>;
 
+/** A committed double-click edit. The grid does not write this into `data`. */
+export interface CellEdit<TRow = Record<string, unknown>> {
+  row: TRow;
+  rowId: RowId;
+  columnId: string;
+  /** `field`, or the column id when the column is edited only through `valueSetter`. */
+  field: string;
+  previousValue: unknown;
+  value: unknown;
+  /** Row returned by `valueSetter`, when the column defines one. */
+  nextRow?: TRow;
+}
+
 export interface ColumnDef<TRow = Record<string, unknown>> {
   /** Dot path, e.g. "address.city". */
   field?: string;
@@ -209,6 +222,11 @@ export interface ColumnDef<TRow = Record<string, unknown>> {
   header?: string;
   type?: ColumnType;
   valueGetter?: (row: TRow) => unknown;
+  /**
+   * Builds the row after an in-place edit. Required for columns that use
+   * `valueGetter` (or omit `field`); the grid passes the result as `CellEdit.nextRow`.
+   */
+  valueSetter?: (row: TRow, value: unknown) => TRow;
   format?: (value: unknown, row: TRow) => string;
   formatOptions?: Intl.NumberFormatOptions & Intl.DateTimeFormatOptions & { currency?: string };
   render?: (ctx: CellContext<TRow>) => ReactNode;
@@ -297,6 +315,11 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   onSelectionChange?: (ids: RowId[], rows: TRow[]) => void;
   isRowSelectable?: (row: TRow) => boolean;
   onRowActivate?: (row: TRow, id: RowId, event: MouseEvent | KeyboardEvent) => void;
+  /**
+   * Called when a double-clicked cell is saved with Enter.
+   * The parent updates `data` or sends the value to an API. Escape and blur do not call this.
+   */
+  onCellEdit?: (edit: CellEdit<TRow>) => void;
 
   // ---- Columns / persistence --------------------------------------------
   columnState?: ColumnStateItem[];

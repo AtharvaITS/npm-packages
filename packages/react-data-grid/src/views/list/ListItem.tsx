@@ -2,6 +2,7 @@ import { memo, type MouseEvent } from 'react';
 import { POS_COL, POS_ROW } from '../../a11y/useRovingFocus';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
+import { CellEditor, openCellEditor } from '../CellEditor';
 import {
   buildCardContext,
   getCellParts,
@@ -35,6 +36,7 @@ export const ListItem = memo(function ListItem({
   const ctx = useGrid();
   const { selection, titleColumn, subtitleColumn, imageColumn } = ctx;
   const id = ctx.rowIds[rowIndex]!;
+  const editingColumnId = ctx.editing?.rowId === id ? ctx.editing.columnId : null;
   const hasSelect = selection.mode !== 'none';
   const selected = selection.selected.has(id);
   const selectable = selection.isSelectable(rowIndex);
@@ -61,10 +63,17 @@ export const ListItem = memo(function ListItem({
     const subtitle = subtitleColumn
       ? getCellParts(ctx, rowIndex, subtitleColumn, 'list')
       : undefined;
+    const imageEditing = imageColumn !== undefined && editingColumnId === imageColumn.id;
+    const titleEditing = titleColumn !== undefined && editingColumnId === titleColumn.id;
+    const subtitleEditing = subtitleColumn !== undefined && editingColumnId === subtitleColumn.id;
     body = (
       <>
         {image &&
-          (image.custom ? (
+          (imageEditing && imageColumn ? (
+            <span className="aits-list-media">
+              <CellEditor column={imageColumn} value={image.value} formatted={image.formatted} />
+            </span>
+          ) : image.custom ? (
             <span className="aits-list-media">{image.content}</span>
           ) : isSafeImageSrc(image.value) ? (
             <img
@@ -73,33 +82,71 @@ export const ListItem = memo(function ListItem({
               alt=""
               loading="lazy"
               decoding="async"
+              onDoubleClick={(event) =>
+                imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
+              }
             />
           ) : (
-            <span className="aits-list-media aits-list-media-empty" aria-hidden="true" />
+            <span
+              className="aits-list-media aits-list-media-empty"
+              aria-hidden="true"
+              onDoubleClick={(event) =>
+                imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
+              }
+            />
           ))}
         <div className="aits-list-text">
           <div
             className="aits-list-primary"
-            title={title && !title.custom ? title.formatted : undefined}
+            title={title && !titleEditing && !title.custom ? title.formatted : undefined}
+            onDoubleClick={(event) =>
+              titleColumn && openCellEditor(event, ctx.startEdit, rowIndex, titleColumn.id)
+            }
           >
-            {title?.content}
+            {titleEditing && titleColumn && title ? (
+              <CellEditor column={titleColumn} value={title.value} formatted={title.formatted} />
+            ) : (
+              title?.content
+            )}
           </div>
           {subtitle && (
             <div
               className="aits-list-secondary"
-              title={subtitle.custom ? undefined : subtitle.formatted}
+              title={subtitleEditing || subtitle.custom ? undefined : subtitle.formatted}
+              onDoubleClick={(event) =>
+                subtitleColumn && openCellEditor(event, ctx.startEdit, rowIndex, subtitleColumn.id)
+              }
             >
-              {subtitle.content}
+              {subtitleEditing && subtitleColumn ? (
+                <CellEditor
+                  column={subtitleColumn}
+                  value={subtitle.value}
+                  formatted={subtitle.formatted}
+                />
+              ) : (
+                subtitle.content
+              )}
             </div>
           )}
           {fieldColumns.length > 0 && (
             <div className="aits-list-meta">
               {fieldColumns.map((column) => {
                 const parts = getCellParts(ctx, rowIndex, column, 'list');
+                const fieldEditing = editingColumnId === column.id;
                 return (
-                  <span className="aits-list-meta-item" key={column.id}>
+                  <span
+                    className="aits-list-meta-item"
+                    key={column.id}
+                    onDoubleClick={(event) =>
+                      openCellEditor(event, ctx.startEdit, rowIndex, column.id)
+                    }
+                  >
                     <span className="aits-list-meta-label">{column.header}: </span>
-                    {parts.content}
+                    {fieldEditing ? (
+                      <CellEditor column={column} value={parts.value} formatted={parts.formatted} />
+                    ) : (
+                      parts.content
+                    )}
                   </span>
                 );
               })}

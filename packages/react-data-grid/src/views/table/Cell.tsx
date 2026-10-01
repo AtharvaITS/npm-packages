@@ -1,6 +1,7 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
+import { CellEditor, isCellEditing, openCellEditor } from '../CellEditor';
 import { getCellParts } from '../cellContent';
 
 export interface CellProps {
@@ -15,6 +16,10 @@ export interface CellProps {
 export function Cell({ rowIndex, column, ariaColIndex, itemProps, style }: CellProps) {
   const ctx = useGrid();
   const parts = getCellParts(ctx, rowIndex, column, 'table');
+  const editing = isCellEditing(ctx.editing, ctx.rowIds[rowIndex], column.id);
+  const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
+    openCellEditor(event, ctx.startEdit, rowIndex, column.id);
+  };
   return (
     <div
       role="gridcell"
@@ -24,12 +29,21 @@ export function Cell({ rowIndex, column, ariaColIndex, itemProps, style }: CellP
       data-type={column.type}
       data-pinned={column.pinned ?? undefined}
       title={
-        !parts.custom && parts.formatted && column.type !== 'image' ? parts.formatted : undefined
+        editing
+          ? undefined
+          : !parts.custom && parts.formatted && column.type !== 'image'
+            ? parts.formatted
+            : undefined
       }
       style={style}
+      onDoubleClick={onDoubleClick}
       {...itemProps}
     >
-      {parts.content}
+      {editing ? (
+        <CellEditor column={column} value={parts.value} formatted={parts.formatted} />
+      ) : (
+        parts.content
+      )}
     </div>
   );
 }

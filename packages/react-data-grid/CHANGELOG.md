@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.3
+
+### Patch Changes
+
+- b445478: fixed inline editing
+
 ## 1.0.2
 
 ### Patch Changes

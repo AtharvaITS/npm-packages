@@ -162,6 +162,7 @@ const columns = createColumns<Employee>([
 | `header` | Header / label text | humanized field (`firstName` → “First Name”) |
 | `type` | `auto`, `text`, `number`, `currency`, `percent`, `boolean`, `date`, `image`, `enum` | `auto` (inferred; strings are never inferred as numbers/dates) |
 | `valueGetter(row)` | Derived value used for display, sort, filter and search | — |
+| `valueSetter(row, value)` | Row to commit after a double-click edit. Required to edit a `valueGetter` column; the grid reports it as `onCellEdit` `nextRow` | — |
 | `format(value, row)` | Display text only — sort/filter/search still use the raw value | locale-aware per type |
 | `formatOptions` | `Intl` options, e.g. `{ currency: 'EUR' }`, `{ dateStyle: 'long' }` | — |
 | `render(ctx)` | Custom content in every view. `ctx`: `row, rowId, value, formattedValue, column, view, selected` | — |
@@ -468,6 +469,7 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `selection` / `defaultSelection` / `onSelectionChange` | `RowId[]`; callback `(ids, rows)` | `[]` |
 | `isRowSelectable` | `(row) => boolean` | all rows |
 | `onRowActivate` | `(row, id, event) => void` | — |
+| `onCellEdit` | `(edit: { row, rowId, columnId, field, previousValue, value, nextRow? }) => void` | — |
 
 ### Columns and persistence
 
