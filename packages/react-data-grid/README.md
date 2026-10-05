@@ -15,22 +15,21 @@ This file is the user guide. Each feature below says what it does, where it appe
 ## Contents
 
 1. [Quick start](#quick-start)
-2. [Playground](#playground)
-3. [Views](#views)
-4. [Data, ids and columns](#data-ids-and-columns)
-5. [Sort, search and filter](#sort-search-and-filter)
-6. [Pagination and scrolling](#pagination-and-scrolling)
-7. [Server (host-managed) mode](#server-host-managed-mode)
-8. [Selection and activation](#selection-and-activation)
-9. [Inline cell editing](#inline-cell-editing)
-10. [Column management and saved preferences](#column-management-and-saved-preferences)
-11. [Theming](#theming)
-12. [Localization and right-to-left](#localization-and-right-to-left)
-13. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
-14. [Accessibility](#accessibility)
-15. [Server-side rendering](#server-side-rendering)
-16. [Browser support](#browser-support)
-17. [Props reference](#props-reference)
+2. [Views](#views)
+3. [Data, ids and columns](#data-ids-and-columns)
+4. [Sort, search and filter](#sort-search-and-filter)
+5. [Pagination and scrolling](#pagination-and-scrolling)
+6. [Server (host-managed) mode](#server-host-managed-mode)
+7. [Selection and activation](#selection-and-activation)
+8. [Inline cell editing](#inline-cell-editing)
+9. [Column management and saved preferences](#column-management-and-saved-preferences)
+10. [Theming](#theming)
+11. [Localization and right-to-left](#localization-and-right-to-left)
+12. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
+13. [Accessibility](#accessibility)
+14. [Server-side rendering](#server-side-rendering)
+15. [Browser support](#browser-support)
+16. [Props reference](#props-reference)
 
 ---
 
@@ -80,39 +79,6 @@ The component **never modifies** the array you pass. Sorting, filtering, paging 
 2. Confirm four headers and two rows. **Active** shows a check for Ada and a cross for Alan. The check and cross include the hidden text “Yes” and “No”.
 3. Confirm the toolbar contains a search box labeled **Search records**, a **Filter** button, a **Columns** button, and a **View** switcher with **Table**, **Grid** and **List**.
 4. Pass `data={[]}` and confirm the message “No data to display” and that the toolbar is gone.
-
----
-
-## Playground
-
-The repository includes a Vite playground that mounts the grid against the package source. From the repository root:
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173). The page title is **ReactDataGrid Playground**. Use the **Scenario** dropdown to load a data set, and **Reset** to return to the default scenario and remount the grid (that clears sort, search, filters, page and column layout).
-
-The playground turns on search, filters, all three views, column resize, reorder, hide and pin, and paging (25 rows, options 10 / 25 / 50 / 100). It does **not** turn on row selection, inline editing, multi-sort, saved preferences, or custom messages. Those features are implemented; test them with the code samples in the sections below.
-
-| Scenario | Sample data | What to look for |
-|---|---|---|
-| **Default: 50 sample records** | 50 employees. Fields: `id`, `name`, `email`, `avatar`, `department`, `role`, `salary`, `bonusPct`, `active`, `startDate`, `rating`, `address`, `bio`. Row id is `id` (`EMP-001` …). | Full toolbar, two pages of 25, address shown as “City, Country” |
-| **Empty array** | `[]` | “No data to display”. No toolbar |
-| **data = null** | `null` | Same empty state as an empty array |
-| **Invalid items (null, numbers, strings)** | Three object rows mixed with `null`, `42`, `'str'`, an array and `undefined` | Only “Valid row one”, “Valid row two” and “Valid row three”. A development warning lists the dropped indexes |
-| **Edge-case values** | Awkward values (see the steps under [Data, ids and columns](#data-ids-and-columns)) | Dashes for non-finite numbers, literal markup, short object and array summaries |
-| **Wide: 30 rows × 120 fields** | Generated rows with 120 fields | Horizontal scrolling and a long **Columns** list |
-| **Large: 100,000 generated rows** | Generated employees, `pagination="scroll"`, height 600 | No page bar. Scrolling stays on a window of rows |
-| **Host-managed (server) mode** | The same 50 employees, fetched one page at a time with a 600 ms delay | “Loading…” then the first page. Later pages keep the previous rows under a spinner |
-
-**Test the default scenario**
-
-1. Leave **Scenario** on **Default: 50 sample records**.
-2. Confirm headers **Id**, **Name**, **Email**, **Avatar**, **Department**, **Role**, **Salary**, **Bonus Pct**, **Active**, **Start Date**, **Rating**, **Address**, **Bio**.
-3. Confirm row `EMP-001` is Aarav Sharma, Engineering, address **Bengaluru, India**, and that **Active** is a check.
-4. Confirm the page bar reads **1–25 of 50** and **Page 1 of 2**.
 
 ---
 
