@@ -12,7 +12,8 @@
 - Sorting, search and typed filters
 - Pagination, or virtual scrolling for 100,000+ rows
 - Server-side data mode for large data sets
-- Row selection, and column resize, reorder, hide and pin
+- Row selection, row activation, and inline cell editing
+- Column resize, reorder, hide and pin
 - Saved user preferences
 - Theming with CSS variables, plus light and dark modes
 - Localization and right-to-left layouts
@@ -44,9 +45,20 @@ export function People() {
 }
 ```
 
+## Try it
+
+From this repository:
+
+```bash
+npm install
+npm run dev
+```
+
+The playground opens at [http://localhost:5173](http://localhost:5173). The **Scenario** menu loads sample data for the table, filters, paging, virtual scrolling and server mode. Row selection, inline editing and saved preferences are implemented in the component and are covered by the package guide; the playground leaves them off.
+
 ## Documentation
 
-See the [package documentation](./packages/react-data-grid/README.md) for columns, views, sorting and filtering, server mode, selection, theming, localization, accessibility and the full props reference.
+See the [package documentation](./packages/react-data-grid/README.md) for a feature-by-feature testing guide: columns, views, sorting and filtering, paging, server mode, selection, cell editing, column layout, theming, localization, accessibility and the full props reference.
 
 ## License
 
