@@ -73,6 +73,13 @@ export const FilterIcon = () => (
     <path d="M2 3h12l-4.5 5.5V13l-3-1.5V8.5z" />
   </svg>
 );
+export const FormatIcon = () => (
+  <svg {...base}>
+    <path d="M4 13h8" />
+    <path d="M5.2 11.2L8 3.2l2.8 8" />
+    <path d="M6.2 8.4h3.6" />
+  </svg>
+);
 export const ColumnsIcon = () => (
   <svg {...base}>
     <rect x="2" y="3" width="12" height="10" rx="1" />

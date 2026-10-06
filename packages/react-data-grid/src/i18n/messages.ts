@@ -1,4 +1,10 @@
-import type { FilterOperator, Messages } from '../types';
+import type {
+  FilterOperator,
+  FormatFontStyle,
+  FormatFontWeight,
+  FormatOperator,
+  Messages,
+} from '../types';
 
 const operators: Record<FilterOperator, string> = {
   contains: 'contains',
@@ -20,6 +26,36 @@ const operators: Record<FilterOperator, string> = {
   isNotEmpty: 'is not empty',
   isTrue: 'is true',
   isFalse: 'is false',
+};
+
+const formatOperators: Record<FormatOperator, string> = {
+  equal: 'Equal',
+  notEqual: 'Not equal',
+  isEmpty: 'Is empty',
+  isNotEmpty: 'Is not empty',
+  contains: 'Contains',
+  notContains: 'Does not contain',
+  startsWith: 'Starts with',
+  endsWith: 'Ends with',
+  between: 'Between',
+  notBetween: 'Not between',
+  lt: 'Less than',
+  lte: 'Less than or equal',
+  gt: 'Greater than',
+  gte: 'Greater than or equal',
+};
+
+const formatFontWeights: Record<FormatFontWeight, string> = {
+  default: 'Default',
+  normal: 'Normal',
+  '600': '600',
+  '700': '700',
+};
+
+const formatFontStyles: Record<FormatFontStyle, string> = {
+  default: 'Default',
+  normal: 'Normal',
+  italic: 'Italic',
 };
 
 export const defaultMessages: Messages = {
@@ -75,6 +111,42 @@ export const defaultMessages: Messages = {
   clearSelection: 'Clear selection',
   pageStatus: (page, pageCount) => `Page ${page} of ${pageCount}`,
   resizeColumn: 'Resize column',
+  format: 'Format',
+  formatTitle: 'Conditional Formatting',
+  formatAdd: 'Add rule',
+  formatEmpty: 'No conditional formatting rules added.',
+  formatClose: 'Close',
+  formatEdit: 'Edit',
+  formatDelete: 'Delete',
+  formatSave: 'Save',
+  formatCancel: 'Cancel',
+  formatColumn: 'Column',
+  formatOperator: 'Operator',
+  formatOperatorPlaceholder: 'Select an operator',
+  formatValue: 'Value',
+  formatValueTo: 'and',
+  formatScope: 'Scope',
+  formatScopeCell: 'Cell',
+  formatScopeRow: 'Row',
+  formatBackground: 'Background',
+  formatText: 'Text',
+  formatFontWeight: 'Font weight',
+  formatFontStyle: 'Font style',
+  formatFont: 'Font',
+  formatRules: 'Existing rules',
+  formatAddTitle: 'Add rule',
+  formatEditTitle: 'Edit rule',
+  formatPreview: 'Formatting',
+  formatUseColor: 'Apply',
+  formatOperators,
+  formatFontWeights,
+  formatFontStyles,
+  formatValidationColumn: 'Select a column.',
+  formatValidationOperator: 'Select an operator.',
+  formatValidationValue: 'Enter a value.',
+  formatValidationRange: 'Enter both values.',
+  formatValidationNumber: 'Enter a valid number.',
+  formatValidationDate: 'Enter a valid date.',
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {
@@ -83,5 +155,11 @@ export function mergeMessages(partial?: Partial<Messages>): Messages {
     ...defaultMessages,
     ...partial,
     operators: { ...defaultMessages.operators, ...(partial.operators ?? {}) },
+    formatOperators: { ...defaultMessages.formatOperators, ...(partial.formatOperators ?? {}) },
+    formatFontWeights: {
+      ...defaultMessages.formatFontWeights,
+      ...(partial.formatFontWeights ?? {}),
+    },
+    formatFontStyles: { ...defaultMessages.formatFontStyles, ...(partial.formatFontStyles ?? {}) },
   };
 }

@@ -919,4 +919,142 @@
       color: HighlightText;
     }
   }
+
+  /* Shared by the format dialog. */
+  .aits-export-fieldset {
+    margin: 0;
+    padding: 0.25rem 0.25rem 0.5rem;
+    border: 0;
+  }
+  .aits-export-fieldset + .aits-export-fieldset {
+    border-top: 1px solid var(--aits-color-border);
+    padding-top: 0.5rem;
+  }
+  .aits-export-legend {
+    padding: 0;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--aits-color-text-muted);
+  }
+  .aits-export-notice {
+    margin: 0.25rem 0.25rem 0;
+    font-size: 0.8125rem;
+    color: var(--aits-color-danger);
+  }
+
+  /* ---------- Conditional formatting ---------- */
+  .aits-format-panel {
+    min-width: min(22rem, calc(100vw - 16px));
+  }
+  .aits-format-editor {
+    min-width: min(24rem, calc(100vw - 16px));
+    max-height: min(40rem, calc(100vh - 16px));
+  }
+  .aits-format-empty {
+    margin: 0.25rem 0.25rem 0.5rem;
+    color: var(--aits-color-text-muted);
+  }
+  .aits-format-rules {
+    display: flex;
+    flex-direction: column;
+  }
+  .aits-format-rule {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.25rem;
+    border-top: 1px solid var(--aits-color-border);
+  }
+  .aits-format-rule-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .aits-format-rule-title {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .aits-format-rule-detail {
+    color: var(--aits-color-text-muted);
+    font-size: 0.8125rem;
+  }
+  .aits-format-rule-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .aits-format-swatch {
+    display: inline-grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    border: 1px solid var(--aits-color-border);
+    border-radius: var(--aits-radius);
+  }
+  .aits-format-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    max-height: 9rem;
+    overflow: auto;
+  }
+  .aits-format-editor > .aits-export-fieldset .aits-input {
+    width: 100%;
+  }
+  .aits-format-values,
+  .aits-format-field,
+  .aits-format-color {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.375rem;
+  }
+  .aits-format-values .aits-input {
+    width: auto;
+    flex: 1 1 7rem;
+  }
+  .aits-format-field {
+    justify-content: space-between;
+  }
+  .aits-format-field .aits-input {
+    flex: 1 1 8rem;
+  }
+  .aits-format-color label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .aits-format-color input[type='color'] {
+    width: 2.25rem;
+    height: 2rem;
+    padding: 0.125rem;
+    border: 1px solid var(--aits-color-border);
+    border-radius: var(--aits-radius);
+    background: var(--aits-color-surface);
+  }
+  .aits-format-color input[type='color']:disabled {
+    opacity: 0.45;
+  }
+  .aits-format-actions-end {
+    justify-content: flex-end;
+  }
+  .aits-row[data-formatted][data-selected] {
+    background: var(--aits-cf-bg, var(--aits-color-selected-bg)) !important;
+    color: var(--aits-cf-color, inherit);
+    box-shadow: inset 3px 0 0 var(--aits-color-accent);
+  }
+  .aits-row[data-selected] .aits-cell[data-formatted][data-pinned] {
+    background: var(--aits-cf-bg, var(--aits-color-selected-bg)) !important;
+    color: var(--aits-cf-color, inherit);
+  }
+  .aits-card[data-formatted][data-selected],
+  .aits-list-item[data-formatted][data-selected] {
+    background: var(--aits-cf-bg, var(--aits-color-selected-bg));
+    color: var(--aits-cf-color, inherit);
+  }
 }
