@@ -21,6 +21,8 @@ export type {
   DataRequest,
   Density,
   FetchDataOptions,
+  ExportFormat,
+  ExportScope,
   FilterCondition,
   FilterOperator,
   GridState,

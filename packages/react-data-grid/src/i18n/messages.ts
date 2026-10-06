@@ -75,6 +75,23 @@ export const defaultMessages: Messages = {
   clearSelection: 'Clear selection',
   pageStatus: (page, pageCount) => `Page ${page} of ${pageCount}`,
   resizeColumn: 'Resize column',
+  exportLabel: 'Export',
+  exportTitle: 'Export options',
+  exportScope: 'What to export',
+  exportScopeView: 'Current Table View',
+  exportScopeAll: 'All Data',
+  exportScopePage: 'Current Page',
+  exportScopeSelected: 'Selected Rows',
+  exportFormat: 'Format',
+  exportFormatCsv: 'CSV',
+  exportFormatExcel: 'Excel',
+  exportFormatPdf: 'PDF',
+  exportAction: 'Export',
+  exportCancel: 'Cancel',
+  exportEmpty: 'Nothing to export.',
+  exportNoneSelected: 'No rows selected.',
+  exportServerNote: 'Only rows loaded in the grid are included.',
+  exportDone: (count) => `Exported ${count} ${count === 1 ? 'row' : 'rows'}.`,
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {

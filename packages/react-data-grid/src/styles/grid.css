@@ -919,4 +919,36 @@
       color: HighlightText;
     }
   }
+
+  /* ---------- Export options ---------- */
+  .aits-export-panel {
+    min-width: min(18rem, calc(100vw - 16px));
+  }
+  .aits-export-fieldset {
+    margin: 0;
+    padding: 0.25rem 0.25rem 0.5rem;
+    border: 0;
+  }
+  .aits-export-fieldset + .aits-export-fieldset {
+    border-top: 1px solid var(--aits-color-border);
+    padding-top: 0.5rem;
+  }
+  .aits-export-legend {
+    padding: 0;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--aits-color-text-muted);
+  }
+  .aits-export-note,
+  .aits-export-notice {
+    margin: 0.25rem 0.25rem 0;
+    font-size: 0.8125rem;
+  }
+  .aits-export-note {
+    color: var(--aits-color-text-muted);
+  }
+  .aits-export-notice {
+    color: var(--aits-color-danger);
+  }
 }
