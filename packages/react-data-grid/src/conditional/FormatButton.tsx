@@ -6,6 +6,7 @@ import { FormatIcon } from '../views/icons';
 import { useConditionalFormat } from './FormatContext';
 import { HeaderStyleEditor } from './HeaderStyleEditor';
 import { RuleEditor } from './RuleEditor';
+import { TextAlignmentEditor } from './TextAlignmentEditor';
 import { describeRule, formatToStyle } from './evaluate';
 import {
   EMPTY_HEADER_STYLE,
@@ -13,32 +14,49 @@ import {
   hasHeaderStyle,
   headerStyleToCss,
 } from './headerStyle';
+import {
+  EMPTY_TEXT_ALIGNMENT,
+  describeTextAlignment,
+  hasTextAlignment,
+  textAlignmentCellStyle,
+} from './textAlignment';
 
 interface EditorState {
   rule: ConditionalFormatRule | null;
 }
 
-/** Toolbar Format button: rule list, rule editor, and header style. */
+/** Toolbar Format button: rule list, rule editor, header style, and text alignment. */
 export function FormatButton() {
   const ctx = useGrid();
   const { messages } = ctx;
-  const { rules, setRules, headerStyle, setHeaderStyle } = useConditionalFormat();
+  const { rules, setRules, headerStyle, setHeaderStyle, textAlignment, setTextAlignment } =
+    useConditionalFormat();
   const [open, setOpen] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [headerOpen, setHeaderOpen] = useState(false);
+  const [textAlignOpen, setTextAlignOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
 
   const closeEditor = () => setEditor(null);
   const closeHeader = () => setHeaderOpen(false);
+  const closeTextAlignment = () => setTextAlignOpen(false);
 
   const openEditor = (rule: ConditionalFormatRule | null) => {
     closeHeader();
+    closeTextAlignment();
     setEditor({ rule });
   };
 
   const openHeader = () => {
     closeEditor();
+    closeTextAlignment();
     setHeaderOpen(true);
+  };
+
+  const openTextAlignment = () => {
+    closeEditor();
+    closeHeader();
+    setTextAlignOpen(true);
   };
 
   const save = (rule: ConditionalFormatRule) => {
@@ -60,11 +78,14 @@ export function FormatButton() {
         className="aits-button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        data-active={rules.length > 0 || hasHeaderStyle(headerStyle) || undefined}
+        data-active={
+          rules.length > 0 || hasHeaderStyle(headerStyle) || hasTextAlignment(textAlignment) || undefined
+        }
         onClick={() => {
           if (open) {
             closeEditor();
             closeHeader();
+            closeTextAlignment();
           }
           setOpen((current) => !current);
         }}
@@ -74,7 +95,7 @@ export function FormatButton() {
         {rules.length > 0 && <span className="aits-badge">{rules.length}</span>}
       </button>
       <Popover
-        open={open && editor === null && !headerOpen}
+        open={open && editor === null && !headerOpen && !textAlignOpen}
         onClose={() => setOpen(false)}
         anchorRef={button}
         label={messages.formatTitle}
@@ -92,6 +113,9 @@ export function FormatButton() {
           </button>
           <button type="button" className="aits-button" onClick={openHeader}>
             {messages.headerStyle}
+          </button>
+          <button type="button" className="aits-button" onClick={openTextAlignment}>
+            {messages.textAlignment}
           </button>
         </div>
         {rules.length === 0 ? (
@@ -188,6 +212,45 @@ export function FormatButton() {
             </div>
           </div>
         )}
+        {hasTextAlignment(textAlignment) && (
+          <div className="aits-format-rules">
+            <div className="aits-export-legend">{messages.textAlignment}</div>
+            <div className="aits-format-rule">
+              <span
+                className="aits-format-swatch"
+                style={{ display: 'flex', alignItems: 'center', ...textAlignmentCellStyle(textAlignment) }}
+                aria-hidden="true"
+              >
+                Aa
+              </span>
+              <div className="aits-format-rule-body">
+                <div className="aits-format-rule-title">
+                  {describeTextAlignment(textAlignment, messages.textAlignment, messages.textAlignments)}
+                </div>
+              </div>
+              <div className="aits-format-rule-actions">
+                <button
+                  type="button"
+                  className="aits-button aits-button-quiet"
+                  onClick={openTextAlignment}
+                >
+                  {messages.formatEdit}
+                </button>
+                <button
+                  type="button"
+                  className="aits-button aits-button-quiet"
+                  aria-label={`${messages.formatDelete} ${describeTextAlignment(textAlignment, messages.textAlignment, messages.textAlignments)}`}
+                  onClick={() => {
+                    setTextAlignment(EMPTY_TEXT_ALIGNMENT);
+                    closeTextAlignment();
+                  }}
+                >
+                  {messages.formatDelete}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="aits-popover-actions aits-format-actions-end">
           <button
             type="button"
@@ -195,6 +258,7 @@ export function FormatButton() {
             onClick={() => {
               closeEditor();
               closeHeader();
+              closeTextAlignment();
               setOpen(false);
             }}
           >
@@ -219,6 +283,17 @@ export function FormatButton() {
           onApply={(style) => {
             setHeaderStyle(style);
             closeHeader();
+          }}
+        />
+      )}
+      {textAlignOpen && (
+        <TextAlignmentEditor
+          anchorRef={button}
+          initial={textAlignment}
+          onCancel={closeTextAlignment}
+          onApply={(alignment) => {
+            setTextAlignment(alignment);
+            closeTextAlignment();
           }}
         />
       )}

@@ -452,6 +452,40 @@
     justify-content: center;
     text-align: center;
   }
+  /* Global text alignment overrides column alignment on every header and data cell. */
+  .aits-table[data-text-align='left'] .aits-cell:not(.aits-select-cell),
+  .aits-table[data-text-align='left'] .aits-header-cell:not(.aits-select-cell) {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .aits-table[data-text-align='center'] .aits-cell:not(.aits-select-cell),
+  .aits-table[data-text-align='center'] .aits-header-cell:not(.aits-select-cell) {
+    justify-content: center;
+    text-align: center;
+  }
+  .aits-table[data-text-align='right'] .aits-cell:not(.aits-select-cell),
+  .aits-table[data-text-align='right'] .aits-header-cell:not(.aits-select-cell) {
+    justify-content: flex-end;
+    text-align: right;
+  }
+  .aits-table[data-text-align='left'] .aits-header-cell .aits-sort-button,
+  .aits-table[data-text-align='left'] .aits-header-cell .aits-header-static {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .aits-table[data-text-align='center'] .aits-header-cell .aits-sort-button,
+  .aits-table[data-text-align='center'] .aits-header-cell .aits-header-static {
+    flex-direction: row;
+    justify-content: center;
+    text-align: center;
+  }
+  .aits-table[data-text-align='right'] .aits-header-cell .aits-sort-button,
+  .aits-table[data-text-align='right'] .aits-header-cell .aits-header-static {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    text-align: right;
+  }
   .aits-cell[data-pinned],
   .aits-header-cell[data-pinned] {
     position: sticky;

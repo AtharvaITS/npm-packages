@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useGrid } from '../state/GridContext';
-import type { ConditionalFormatRule, HeaderStyle } from '../types';
+import type { ConditionalFormatRule, HeaderStyle, TextAlignment } from '../types';
 import {
   formatToStyle,
   resolveCellFormat,
@@ -13,6 +13,8 @@ export interface ConditionalFormatContextValue {
   setRules(rules: ConditionalFormatRule[]): void;
   headerStyle: HeaderStyle;
   setHeaderStyle(style: HeaderStyle): void;
+  textAlignment: TextAlignment;
+  setTextAlignment(alignment: TextAlignment): void;
 }
 
 const ConditionalFormatContext = createContext<ConditionalFormatContextValue | null>(null);
@@ -22,11 +24,13 @@ export function ConditionalFormatProvider({
   setRules,
   headerStyle,
   setHeaderStyle,
+  textAlignment,
+  setTextAlignment,
   children,
 }: ConditionalFormatContextValue & { children: ReactNode }) {
   const value = useMemo(
-    () => ({ rules, setRules, headerStyle, setHeaderStyle }),
-    [rules, setRules, headerStyle, setHeaderStyle],
+    () => ({ rules, setRules, headerStyle, setHeaderStyle, textAlignment, setTextAlignment }),
+    [rules, setRules, headerStyle, setHeaderStyle, textAlignment, setTextAlignment],
   );
   return (
     <ConditionalFormatContext.Provider value={value}>{children}</ConditionalFormatContext.Provider>

@@ -1,5 +1,6 @@
 import { isFormatOperator, operatorValueCount } from '../conditional/evaluate';
 import { isHeaderFontWeight, isHeaderTextTransform } from '../conditional/headerStyle';
+import { isTextAlignValue } from '../conditional/textAlignment';
 import type {
   ColumnStateItem,
   ConditionalFormatRule,
@@ -8,13 +9,14 @@ import type {
   FormatFontWeight,
   HeaderStyle,
   SortItem,
+  TextAlignment,
   ViewType,
 } from '../types';
 
 /**
  * What preference-saving stores.
  * Selection, search, filters and page are never saved.
- * Formatting rules and header style are saved with the other preferences.
+ * Formatting rules, header style and text alignment are saved with the other preferences.
  */
 export interface PersistedState {
   view?: ViewType;
@@ -23,9 +25,10 @@ export interface PersistedState {
   columns?: ColumnStateItem[];
   formatRules?: ConditionalFormatRule[];
   headerStyle?: HeaderStyle;
+  textAlignment?: TextAlignment;
 }
 
-/** Fields written on every save. Empty rules and an empty header style record a delete. */
+/** Fields written on every save. Empty rules, header style and text alignment record a delete. */
 export type PersistedWrite = {
   view: ViewType;
   sort: SortItem[];
@@ -33,6 +36,7 @@ export type PersistedWrite = {
   columns: ColumnStateItem[];
   formatRules: ConditionalFormatRule[];
   headerStyle: HeaderStyle;
+  textAlignment: TextAlignment;
 };
 
 export const STORAGE_PREFIX = '@atharvaits/react-data-grid:';
@@ -169,6 +173,16 @@ function parseHeaderStyle(raw: unknown): HeaderStyle | undefined {
   return style;
 }
 
+function parseTextAlignment(raw: unknown): TextAlignment | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const source = raw as Record<string, unknown>;
+  const alignment: TextAlignment = {};
+  if (typeof source.alignment === 'string' && isTextAlignValue(source.alignment)) {
+    alignment.alignment = source.alignment;
+  }
+  return alignment;
+}
+
 function isSortItem(x: unknown): x is SortItem {
   return (
     typeof x === 'object' &&
@@ -234,6 +248,10 @@ export function readPersisted(
     const style = parseHeaderStyle(parsed.headerStyle);
     if (style !== undefined) result.headerStyle = style;
   }
+  if (parsed.textAlignment !== undefined) {
+    const alignment = parseTextAlignment(parsed.textAlignment);
+    if (alignment !== undefined) result.textAlignment = alignment;
+  }
   return result;
 }
 
@@ -247,6 +265,7 @@ export function writePersisted(persistKey: string, state: PersistedWrite): void 
     columns: state.columns,
     formatRules: state.formatRules,
     headerStyle: state.headerStyle,
+    textAlignment: state.textAlignment,
   };
   try {
     writeRaw(STORAGE_PREFIX + persistKey, JSON.stringify(payload));

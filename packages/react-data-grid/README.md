@@ -4,7 +4,7 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, conditional formatting, header styling, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, conditional formatting, header styling, text alignment, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -16,7 +16,7 @@
 2. [Views](#views)
 3. [Data, ids and columns](#data-ids-and-columns)
 4. [Sort, search and filter](#sort-search-and-filter)
-5. [Conditional formatting and header style](#conditional-formatting)
+5. [Conditional formatting, header style and text alignment](#conditional-formatting)
 6. [Pagination and scrolling](#pagination-and-scrolling)
 7. [Server (host-managed) mode](#server-host-managed-mode)
 8. [Selection and activation](#selection-and-activation)
@@ -53,7 +53,7 @@ export function People() {
 }
 ```
 
-That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, conditional formatting, header style, a column chooser, pagination and a table/grid/list switcher.
+That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, conditional formatting, header style, text alignment, a column chooser, pagination and a table/grid/list switcher.
 
 What the zero-config defaults handle for you:
 
@@ -242,7 +242,7 @@ Controlled: `sort` + `onSortChange`, `search` + `onSearchChange`, `filters` + `o
 
 ## Conditional formatting
 
-The toolbar **Format** button opens a panel to add, edit, and delete rules, and to open **Header Style**. A matching rule paints a cell or the whole row with a background, text color, font weight, and font style. The same rules apply in the table, grid, and list views. Header style paints the table header only.
+The toolbar **Format** button opens a panel to add, edit, and delete rules, and to open **Header Style** and **Text Alignment**. A matching rule paints a cell or the whole row with a background, text color, font weight, and font style. The same rules apply in the table, grid, and list views. Header style paints the table header only. Text alignment aligns every header and every data cell in the table.
 
 ```tsx
 <ReactDataGrid
@@ -299,7 +299,26 @@ Hide the button and still apply rules you pass in:
 - Controlled: `headerStyle` + `onHeaderStyleChange`.
 - `conditionalFormatting={false}` hides the Format button. A `headerStyle` you pass in still applies.
 
-`persistStateKey` saves formatting rules and header style with the other grid preferences. A deleted rule or header style stays deleted after refresh. Controlled `formatRules` and `headerStyle` still win over the saved copy.
+### Text alignment
+
+**Text Alignment** in the Format panel opens a dialog with **Left**, **Center**, and **Right**. Only one option is active. **Apply** stores that alignment for the whole table, shows it in the Format panel as **Text Alignment: Center** (or Left or Right), and returns there. **Cancel** discards the selection in that dialog. The saved alignment is listed like a conditional formatting rule, with **Edit** and **Delete**.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  defaultTextAlignment={{ alignment: 'center' }}
+  onTextAlignmentChange={(alignment) => save(alignment)}
+/>
+```
+
+- `alignment`: `left`, `center`, or `right`. One value applies to every header cell and every data cell in every column.
+- Leave `alignment` unset (`{}`) to keep each column's own alignment. Numeric columns stay at the end; other columns stay at the start, unless a column sets `align`.
+- **Edit** opens the dialog with the current alignment selected and updates that same rule.
+- **Delete** removes the rule and restores each column's own alignment.
+- Controlled: `textAlignment` + `onTextAlignmentChange`.
+- `conditionalFormatting={false}` hides the Format button. A `textAlignment` you pass in still applies.
+
+`persistStateKey` saves formatting rules, header style, and text alignment with the other grid preferences. A deleted rule, header style, or text alignment stays deleted after refresh. Controlled `formatRules`, `headerStyle`, and `textAlignment` still win over the saved copy.
 
 ---
 
@@ -394,12 +413,12 @@ In the table view, users can resize columns (drag the header edge, or Alt+←/�
   enableColumnPin // all default true
   defaultColumnState={[{ id: 'notes', order: 5, hidden: true }]}
   onColumnStateChange={(state) => save(state)}
-  persistStateKey="orders-grid" // remember view, sort, page size, column layout, formatting rules and header style
+  persistStateKey="orders-grid" // remember view, sort, page size, column layout, formatting rules, header style and text alignment
   onStateChange={(state, changed) => console.log(changed, state)}
 />
 ```
 
-Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns, invalid rules, and disallowed views are ignored. Selection, search, filters, and page are never saved. Formatting rules and header style are saved. Deleting a rule or the header style writes that empty result, so a refresh does not bring it back. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
+Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns, invalid rules, invalid alignments, and disallowed views are ignored. Selection, search, filters, and page are never saved. Formatting rules, header style, and text alignment are saved. Deleting a rule, the header style, or the text alignment writes that empty result, so a refresh does not bring it back. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
 
 ---
 
@@ -546,13 +565,14 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `filters` / `defaultFilters` / `onFiltersChange` | `FilterCondition[]` | `[]` |
 | `filterable` | `boolean` | `true` |
 
-### Conditional formatting and header style
+### Conditional formatting, header style and text alignment
 
 | Prop | Type | Default |
 |---|---|---|
 | `conditionalFormatting` | `boolean` | `true` |
 | `formatRules` / `defaultFormatRules` / `onFormatRulesChange` | `ConditionalFormatRule[]` | `[]` |
 | `headerStyle` / `defaultHeaderStyle` / `onHeaderStyleChange` | `HeaderStyle` | `{}` |
+| `textAlignment` / `defaultTextAlignment` / `onTextAlignmentChange` | `TextAlignment` | `{}` |
 
 ### Pagination and scrolling
 
@@ -596,7 +616,7 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 
 ### Exports
 
-`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `ConditionalFormatRule`, `ConditionalFormatStyle`, `FormatOperator`, `FormatScope`, `FormatFontWeight`, `FormatFontStyle`, `HeaderStyle`, `HeaderFontWeight`, `HeaderTextTransform`, `SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `ConditionalFormatRule`, `ConditionalFormatStyle`, `FormatOperator`, `FormatScope`, `FormatFontWeight`, `FormatFontStyle`, `HeaderStyle`, `HeaderFontWeight`, `HeaderTextTransform`, `TextAlignment`, `TextAlignValue`, `SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
 
 ## License
 

@@ -5,7 +5,7 @@ import {
   writePersisted,
   STORAGE_PREFIX,
 } from '../../src/core/persist';
-import type { ConditionalFormatRule, HeaderStyle } from '../../src/types';
+import type { ConditionalFormatRule, HeaderStyle, TextAlignment } from '../../src/types';
 
 const ctx = { columnIds: ['name', 'age'], views: ['table', 'grid', 'list'] as const };
 const rule: ConditionalFormatRule = {
@@ -23,6 +23,7 @@ const headerStyle: HeaderStyle = {
   fontWeight: '700',
   textTransform: 'uppercase',
 };
+const textAlignment: TextAlignment = { alignment: 'center' };
 const full = {
   view: 'grid' as const,
   sort: [{ columnId: 'age', direction: 'desc' as const }],
@@ -30,22 +31,24 @@ const full = {
   columns: [{ id: 'name', width: 220, hidden: false, pinned: 'start' as const, order: 0 }],
   formatRules: [] as ConditionalFormatRule[],
   headerStyle: {} as HeaderStyle,
+  textAlignment: {} as TextAlignment,
 };
 
 describe('persist', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());
 
-  it('writes view, sort, page size, columns, formatting rules and header style', () => {
-    writePersisted('emp', { ...full, formatRules: [rule], headerStyle });
+  it('writes view, sort, page size, columns, formatting rules, header style and text alignment', () => {
+    writePersisted('emp', { ...full, formatRules: [rule], headerStyle, textAlignment });
     const raw = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'emp')!);
-    expect(raw).toEqual({ v: 1, ...full, formatRules: [rule], headerStyle });
+    expect(raw).toEqual({ v: 1, ...full, formatRules: [rule], headerStyle, textAlignment });
     expect(Object.keys(raw).sort()).toEqual([
       'columns',
       'formatRules',
       'headerStyle',
       'pageSize',
       'sort',
+      'textAlignment',
       'v',
       'view',
     ]);
@@ -94,7 +97,7 @@ describe('persist', () => {
     expect(saved.columns).toEqual([{ id: 'age', order: 1, width: 90 }]);
   });
 
-  it('round-trips formatting rules and header style, and drops invalid ones', () => {
+  it('round-trips formatting rules, header style and text alignment, and drops invalid ones', () => {
     writePersisted('emp', {
       ...full,
       formatRules: [
@@ -103,6 +106,7 @@ describe('persist', () => {
         { ...rule, id: 'bad', operator: 'nope' as never },
       ],
       headerStyle: { ...headerStyle, fontSize: 0, fontWeight: 'nope' as never },
+      textAlignment: { alignment: 'nope' as never },
     });
     const saved = readPersisted('emp', { ...ctx, views: [...ctx.views] })!;
     expect(saved.formatRules).toEqual([rule]);
@@ -111,13 +115,15 @@ describe('persist', () => {
       textColor: '#ffffff',
       textTransform: 'uppercase',
     });
+    expect(saved.textAlignment).toEqual({});
   });
 
-  it('treats a saved empty rule list and empty header style as an explicit delete', () => {
-    writePersisted('emp', { ...full, formatRules: [], headerStyle: {} });
+  it('treats a saved empty rule list, header style and text alignment as an explicit delete', () => {
+    writePersisted('emp', { ...full, formatRules: [], headerStyle: {}, textAlignment: {} });
     const saved = readPersisted('emp', { ...ctx, views: [...ctx.views] })!;
     expect(saved.formatRules).toEqual([]);
     expect(saved.headerStyle).toEqual({});
+    expect(saved.textAlignment).toEqual({});
   });
 
   it('leaves formatting fields unset when an older payload omits them', () => {
@@ -128,6 +134,7 @@ describe('persist', () => {
     const saved = readPersisted('emp', { ...ctx, views: [...ctx.views] })!;
     expect(saved.formatRules).toBeUndefined();
     expect(saved.headerStyle).toBeUndefined();
+    expect(saved.textAlignment).toBeUndefined();
     expect(saved.view).toBe('grid');
   });
 

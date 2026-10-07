@@ -6,6 +6,7 @@ import type {
   HeaderFontWeight,
   HeaderTextTransform,
   Messages,
+  TextAlignValue,
 } from '../types';
 
 const operators: Record<FilterOperator, string> = {
@@ -73,6 +74,12 @@ const headerStyleTransforms: Record<HeaderTextTransform, string> = {
   uppercase: 'Uppercase',
   lowercase: 'Lowercase',
   capitalize: 'Capitalize',
+};
+
+const textAlignments: Record<TextAlignValue, string> = {
+  left: 'Left',
+  center: 'Center',
+  right: 'Right',
 };
 
 export const defaultMessages: Messages = {
@@ -174,6 +181,9 @@ export const defaultMessages: Messages = {
   headerStyleApply: 'Apply',
   headerStyleFontWeights,
   headerStyleTransforms,
+  textAlignment: 'Text Alignment',
+  textAlignmentApply: 'Apply',
+  textAlignments,
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {
@@ -195,6 +205,10 @@ export function mergeMessages(partial?: Partial<Messages>): Messages {
     headerStyleTransforms: {
       ...defaultMessages.headerStyleTransforms,
       ...(partial.headerStyleTransforms ?? {}),
+    },
+    textAlignments: {
+      ...defaultMessages.textAlignments,
+      ...(partial.textAlignments ?? {}),
     },
   };
 }
