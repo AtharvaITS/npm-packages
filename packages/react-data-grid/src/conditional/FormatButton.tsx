@@ -7,7 +7,12 @@ import { useConditionalFormat } from './FormatContext';
 import { HeaderStyleEditor } from './HeaderStyleEditor';
 import { RuleEditor } from './RuleEditor';
 import { describeRule, formatToStyle } from './evaluate';
-import { hasHeaderStyle } from './headerStyle';
+import {
+  EMPTY_HEADER_STYLE,
+  describeHeaderStyle,
+  hasHeaderStyle,
+  headerStyleToCss,
+} from './headerStyle';
 
 interface EditorState {
   rule: ConditionalFormatRule | null;
@@ -29,6 +34,11 @@ export function FormatButton() {
   const openEditor = (rule: ConditionalFormatRule | null) => {
     closeHeader();
     setEditor({ rule });
+  };
+
+  const openHeader = () => {
+    closeEditor();
+    setHeaderOpen(true);
   };
 
   const save = (rule: ConditionalFormatRule) => {
@@ -80,14 +90,7 @@ export function FormatButton() {
           >
             {messages.formatAdd}
           </button>
-          <button
-            type="button"
-            className="aits-button"
-            onClick={() => {
-              closeEditor();
-              setHeaderOpen(true);
-            }}
-          >
+          <button type="button" className="aits-button" onClick={openHeader}>
             {messages.headerStyle}
           </button>
         </div>
@@ -140,6 +143,49 @@ export function FormatButton() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {hasHeaderStyle(headerStyle) && (
+          <div className="aits-format-rules">
+            <div className="aits-export-legend">{messages.headerStyle}</div>
+            <div className="aits-format-rule">
+              <span className="aits-format-swatch" style={headerStyleToCss(headerStyle)} aria-hidden="true">
+                Aa
+              </span>
+              <div className="aits-format-rule-body">
+                <div className="aits-format-rule-title">{messages.headerStyle}</div>
+                {describeHeaderStyle(headerStyle, {
+                  background: messages.headerStyleBackground,
+                  text: messages.headerStyleText,
+                  fontSize: messages.headerStyleFontSize,
+                  fontSizeUnit: messages.headerStyleFontSizeUnit,
+                  fontWeight: messages.headerStyleFontWeight,
+                  textTransform: messages.headerStyleTextTransform,
+                  weights: messages.headerStyleFontWeights,
+                  transforms: messages.headerStyleTransforms,
+                }).map((line) => (
+                  <div className="aits-format-rule-detail" key={line}>
+                    {line}
+                  </div>
+                ))}
+              </div>
+              <div className="aits-format-rule-actions">
+                <button type="button" className="aits-button aits-button-quiet" onClick={openHeader}>
+                  {messages.formatEdit}
+                </button>
+                <button
+                  type="button"
+                  className="aits-button aits-button-quiet"
+                  aria-label={`${messages.formatDelete} ${messages.headerStyle}`}
+                  onClick={() => {
+                    setHeaderStyle(EMPTY_HEADER_STYLE);
+                    closeHeader();
+                  }}
+                >
+                  {messages.formatDelete}
+                </button>
+              </div>
+            </div>
           </div>
         )}
         <div className="aits-popover-actions aits-format-actions-end">

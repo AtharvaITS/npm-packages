@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  describeHeaderStyle,
   draftToHeaderStyle,
+  headerLabelStyle,
   headerStyleToCss,
   headerStyleToDraft,
 } from '../../src/conditional/headerStyle';
@@ -43,6 +45,7 @@ describe('header style', () => {
       fontWeight: '700',
       textTransform: 'uppercase',
       '--aits-header-bg': '#1e293b',
+      '--aits-header-transform': 'uppercase',
     });
   });
 
@@ -65,6 +68,33 @@ describe('header style', () => {
         textTransform: 'default',
       }).ok,
     ).toBe(false);
+  });
+
+  it('describes the applied header style and maps each text transform', () => {
+    expect(headerLabelStyle({ textTransform: 'lowercase' })).toEqual({ textTransform: 'lowercase' });
+    expect(headerLabelStyle({ textTransform: 'capitalize' })).toEqual({ textTransform: 'capitalize' });
+    expect(headerLabelStyle({ textTransform: 'default' })).toBeUndefined();
+    expect(
+      describeHeaderStyle(
+        { backgroundColor: '#1e293b', textColor: '#ffffff', fontSize: 14, fontWeight: '700', textTransform: 'uppercase' },
+        {
+          background: 'Background Color',
+          text: 'Text Color',
+          fontSize: 'Font Size',
+          fontSizeUnit: 'px',
+          fontWeight: 'Font Weight',
+          textTransform: 'Text Transform',
+          weights: { default: 'Default', normal: 'Normal', '500': 'Medium', '600': 'Semi Bold', '700': 'Bold' },
+          transforms: { default: 'Default', uppercase: 'Uppercase', lowercase: 'Lowercase', capitalize: 'Capitalize' },
+        },
+      ),
+    ).toEqual([
+      'Background Color: #1e293b',
+      'Text Color: #ffffff',
+      'Font Size: 14px',
+      'Font Weight: Bold',
+      'Text Transform: Uppercase',
+    ]);
   });
 
   it('restores a saved style into the editor draft', () => {

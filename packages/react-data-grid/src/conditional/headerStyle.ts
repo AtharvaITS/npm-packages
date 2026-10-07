@@ -130,8 +130,46 @@ export function headerStyleToCss(style: HeaderStyle | undefined): CSSProperties 
   const fontWeight = fontWeightCss(style.fontWeight);
   if (fontWeight !== undefined) css.fontWeight = fontWeight;
   const textTransform = textTransformCss(style.textTransform);
-  if (textTransform !== undefined) css.textTransform = textTransform;
+  if (textTransform !== undefined) {
+    css.textTransform = textTransform;
+    vars['--aits-header-transform'] = textTransform;
+  }
   return Object.keys(css).length > 0 ? css : undefined;
+}
+
+/** Applied on the header label so a parent button cannot reset the transform. */
+export function headerLabelStyle(style: HeaderStyle | undefined): CSSProperties | undefined {
+  const textTransform = textTransformCss(style?.textTransform);
+  if (!textTransform) return undefined;
+  return { textTransform };
+}
+
+export function describeHeaderStyle(
+  style: HeaderStyle,
+  labels: {
+    background: string;
+    text: string;
+    fontSize: string;
+    fontSizeUnit: string;
+    fontWeight: string;
+    textTransform: string;
+    weights: Record<HeaderFontWeight, string>;
+    transforms: Record<HeaderTextTransform, string>;
+  },
+): string[] {
+  const details: string[] = [];
+  if (style.backgroundColor) details.push(`${labels.background}: ${style.backgroundColor}`);
+  if (style.textColor) details.push(`${labels.text}: ${style.textColor}`);
+  if (style.fontSize !== undefined && style.fontSize > 0) {
+    details.push(`${labels.fontSize}: ${style.fontSize}${labels.fontSizeUnit}`);
+  }
+  if (style.fontWeight && style.fontWeight !== 'default') {
+    details.push(`${labels.fontWeight}: ${labels.weights[style.fontWeight]}`);
+  }
+  if (style.textTransform && style.textTransform !== 'default') {
+    details.push(`${labels.textTransform}: ${labels.transforms[style.textTransform]}`);
+  }
+  return details;
 }
 
 export function hasHeaderStyle(style: HeaderStyle | undefined): boolean {

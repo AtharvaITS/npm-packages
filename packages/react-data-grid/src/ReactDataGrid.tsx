@@ -104,12 +104,14 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   // ---- State ---------------------------------------------------------------
   const api = useGridState(props, { warnKey });
   const { state } = api;
-  const [formatRules, setFormatRules] = useControllableState<ConditionalFormatRule[]>({
+  const [formatRules, setFormatRules, formatRulesControlled] = useControllableState<
+    ConditionalFormatRule[]
+  >({
     value: props.formatRules,
     defaultValue: props.defaultFormatRules ?? EMPTY_FORMAT_RULES,
     onChange: props.onFormatRulesChange,
   });
-  const [headerStyle, setHeaderStyle] = useControllableState<HeaderStyle>({
+  const [headerStyle, setHeaderStyle, headerStyleControlled] = useControllableState<HeaderStyle>({
     value: props.headerStyle,
     defaultValue: props.defaultHeaderStyle ?? EMPTY_HEADER_STYLE,
     onChange: props.onHeaderStyleChange,
@@ -148,7 +150,14 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     [columnsSource, rows, warnKey],
   );
   const columnIds = useMemo(() => resolved.map((c) => c.id), [resolved]);
-  usePersistence(props.persistStateKey, api, columnIds);
+  usePersistence(props.persistStateKey, api, columnIds, {
+    rules: formatRules,
+    setRules: setFormatRules,
+    rulesControlled: formatRulesControlled,
+    headerStyle,
+    setHeaderStyle,
+    headerStyleControlled,
+  });
 
   const effective = useMemo(
     () => applyColumnState(resolved, state.columnState),

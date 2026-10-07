@@ -350,9 +350,9 @@ Flags `enableColumnResize`, `enableColumnReorder`, `enableColumnHide`, and `enab
 
 Off unless `persistStateKey` is set. Storage key: `@atharvaits/react-data-grid:` + key. Payload version is `1`. Unknown versions are discarded.
 
-Saved fields: `view`, `sort`, `pageSize`, `columns`. **Not saved:** selection, search, filters, page.
+Saved fields: `view`, `sort`, `pageSize`, `columns`, `formatRules`, `headerStyle`. **Not saved:** selection, search, filters, page.
 
-Restore runs once per key, after columns exist, in a layout effect (so it does not run during SSR). It only fills **uncontrolled** view, sort, page size, and column state. Controlled props win. Restore is silent (no `onChange` / `onStateChange`).
+Restore runs once per key, after columns exist, in a layout effect (so it does not run during SSR). It only fills **uncontrolled** view, sort, page size, column state, formatting rules, and header style. An empty `formatRules` array or empty `headerStyle` object is a real saved delete and replaces defaults. Missing fields on older payloads are left alone. Controlled props win. Restore is silent (no `onChange` / `onStateChange`).
 
 Writes are debounced 300ms and flushed on unmount. Invalid JSON, unknown column ids, and views that are not allowed are dropped on read. If `localStorage` throws or is missing, an in-memory `Map` is used for the page lifetime. Writes never throw.
 
@@ -579,7 +579,7 @@ These are consequences of the current code, not a backlog.
 - **Grid and list views ignore `height` in page mode.** Only the table sets `maxHeight`.
 - **`getRowId` is all-or-nothing.** One duplicate or one missing id switches every row to positional ids.
 - **Auto-inferred columns change when `data` changes** and `columns` is omitted, including when a server page has a different shape.
-- **Persistence does not save search, filters, selection, or page**, and it does not override controlled props. Restore happens after mount, so the first client paint can differ from the saved view (SSR and hydration stay on the default).
+- **Persistence does not save search, filters, selection, or page**, and it does not override controlled props. It does save formatting rules and header style. Restore happens after mount, so the first client paint can differ from the saved view (SSR and hydration stay on the default).
 - **Debounced search is not flushed on unmount.**
 - **Custom `render` that throws leaves the cell empty** after logging. It does not fall back to formatted text.
 - **List selection has no real checkbox**, only a decorative check. The accessible state is `aria-selected` on `role="option"`.

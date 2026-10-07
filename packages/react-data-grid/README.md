@@ -276,7 +276,7 @@ Hide the button and still apply rules you pass in:
 
 ### Header style
 
-**Header Style** in the Format panel opens a dialog for the table header. **Apply** stores the style and returns to the Format panel. **Cancel** discards the edits in that dialog.
+**Header Style** in the Format panel opens a dialog for the table header. **Apply** stores the style, shows it in the Format panel, and returns there. **Cancel** discards the edits in that dialog. The saved style is listed like a conditional formatting rule, with **Edit** and **Delete**.
 
 ```tsx
 <ReactDataGrid
@@ -292,14 +292,14 @@ Hide the button and still apply rules you pass in:
 />
 ```
 
-- Background and text color are optional. Check **Apply** next to a color, then pick it. Leave it unchecked to keep the current header color.
+- Background and text color can be picked whether or not the checkbox is checked. A chosen color is applied in either case. Leave a color unset to keep the current header color.
 - `fontSize` is a number of pixels. Leave it unset to keep the current size. Zero and negative values are rejected.
 - `fontWeight`: `default`, `normal`, `500` (Medium), `600` (Semi Bold), `700` (Bold). `default` keeps the current header weight.
 - `textTransform`: `default`, `uppercase`, `lowercase`, `capitalize`. `default` keeps the current text. The column header string itself does not change.
 - Controlled: `headerStyle` + `onHeaderStyleChange`.
 - `conditionalFormatting={false}` hides the Format button. A `headerStyle` you pass in still applies.
 
-`persistStateKey` does not save formatting rules or header style.
+`persistStateKey` saves formatting rules and header style with the other grid preferences. A deleted rule or header style stays deleted after refresh. Controlled `formatRules` and `headerStyle` still win over the saved copy.
 
 ---
 
@@ -394,12 +394,12 @@ In the table view, users can resize columns (drag the header edge, or Alt+â†/â†
   enableColumnPin // all default true
   defaultColumnState={[{ id: 'notes', order: 5, hidden: true }]}
   onColumnStateChange={(state) => save(state)}
-  persistStateKey="orders-grid" // remember view, sort, page size and column layout in localStorage
+  persistStateKey="orders-grid" // remember view, sort, page size, column layout, formatting rules and header style
   onStateChange={(state, changed) => console.log(changed, state)}
 />
 ```
 
-Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns and disallowed views are ignored. Selection, search, filters, page, conditional formatting rules, and header style are never saved. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
+Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns, invalid rules, and disallowed views are ignored. Selection, search, filters, and page are never saved. Formatting rules and header style are saved. Deleting a rule or the header style writes that empty result, so a refresh does not bring it back. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
 
 ---
 

@@ -1,4 +1,6 @@
 import { useRef, type CSSProperties, type DragEvent, type PointerEvent } from 'react';
+import { useConditionalFormat } from '../../conditional/FormatContext';
+import { headerLabelStyle } from '../../conditional/headerStyle';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
 import { MoreIcon, SortAscIcon, SortDescIcon, SortNoneIcon } from '../icons';
@@ -37,6 +39,7 @@ export function HeaderCell({
   dragging,
 }: HeaderCellProps) {
   const ctx = useGrid();
+  const { headerStyle } = useConditionalFormat();
   const menuButton = useRef<HTMLButtonElement>(null);
   const sortIndex = ctx.api.state.sort.findIndex((s) => s.columnId === column.id);
   const sortItem = sortIndex >= 0 ? ctx.api.state.sort[sortIndex] : undefined;
@@ -50,7 +53,11 @@ export function HeaderCell({
   const showMenu = hasColumnMenu(column, ctx);
   const multi = ctx.api.state.sort.length > 1;
 
-  const label = <span className="aits-header-label">{column.header}</span>;
+  const label = (
+    <span className="aits-header-label" style={headerLabelStyle(headerStyle)}>
+      {column.header}
+    </span>
+  );
   return (
     <div
       role="columnheader"

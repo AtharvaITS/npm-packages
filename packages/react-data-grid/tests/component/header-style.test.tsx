@@ -66,7 +66,57 @@ describe('header style', () => {
     expect(row.style.fontWeight).toBe('700');
     expect(row.style.textTransform).toBe('uppercase');
     expect(row.style.getPropertyValue('--aits-header-bg')).toBe('#1e293b');
-    expect(screen.getByRole('columnheader', { name: 'Customer Name' })).toHaveTextContent('Customer Name');
+    expect(row.style.getPropertyValue('--aits-header-transform')).toBe('uppercase');
+    const label = within(screen.getByRole('columnheader', { name: 'Customer Name' })).getByText(
+      'Customer Name',
+    );
+    expect(label).toHaveTextContent('Customer Name');
+    expect(label).toHaveStyle({ textTransform: 'uppercase' });
+
+    const list = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(within(list).getByText('Text Transform: Uppercase')).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Delete Header Style' })).toBeInTheDocument();
+  });
+
+  it('applies a color chosen while the checkbox is unchecked', () => {
+    render(<ReactDataGrid data={rows} columns={columns} />);
+    const editor = openHeaderStyle();
+    const background = within(editor).getByRole('checkbox', { name: 'Apply Background Color' });
+    const text = within(editor).getByRole('checkbox', { name: 'Apply Text Color' });
+    expect(background).not.toBeChecked();
+    expect(text).not.toBeChecked();
+    expect(editor.querySelector('input[type="color"][aria-label="Background Color"]')).toBeEnabled();
+    expect(editor.querySelector('input[type="color"][aria-label="Text Color"]')).toBeEnabled();
+    setColor(editor, 'Background Color', '#112233');
+    setColor(editor, 'Text Color', '#abcdef');
+    fireEvent.click(within(editor).getByRole('button', { name: 'Apply' }));
+    expect(headerRow().style.backgroundColor).toBe('rgb(17, 34, 51)');
+    expect(headerRow().style.color).toBe('rgb(171, 205, 239)');
+  });
+
+  it('applies lowercase and capitalize on the header text', () => {
+    const { rerender } = render(
+      <ReactDataGrid key="lower" data={rows} columns={columns} defaultHeaderStyle={{ textTransform: 'lowercase' }} />,
+    );
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Customer Name' })).getByText('Customer Name'),
+    ).toHaveStyle({ textTransform: 'lowercase' });
+
+    rerender(
+      <ReactDataGrid key="cap" data={rows} columns={columns} defaultHeaderStyle={{ textTransform: 'capitalize' }} />,
+    );
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Customer Name' })).getByText('Customer Name'),
+    ).toHaveStyle({ textTransform: 'capitalize' });
+
+    rerender(
+      <ReactDataGrid key="none" data={rows} columns={columns} defaultHeaderStyle={{ textTransform: 'default' }} />,
+    );
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Customer Name' })).getByText('Customer Name').style
+        .textTransform,
+    ).toBe('');
   });
 
   it('discards unsaved edits on Cancel', () => {
@@ -94,6 +144,41 @@ describe('header style', () => {
     const restored = screen.getByRole('dialog', { name: 'Header Style' });
     expect(within(restored).getByRole('combobox', { name: 'Font Weight' })).toHaveValue('700');
     expect(within(restored).getByRole('checkbox', { name: 'Apply Background Color' })).toBeChecked();
+  });
+
+  it('edits and deletes the header style from the formatting list', () => {
+    render(
+      <ReactDataGrid
+        data={rows}
+        columns={columns}
+        defaultHeaderStyle={{ textTransform: 'uppercase', fontWeight: '700' }}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Format' }));
+    const list = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(within(list).getByText('Text Transform: Uppercase')).toBeInTheDocument();
+    expect(within(list).getByText('Font Weight: Bold')).toBeInTheDocument();
+
+    fireEvent.click(within(list).getByRole('button', { name: 'Edit' }));
+    const editor = screen.getByRole('dialog', { name: 'Header Style' });
+    fireEvent.change(within(editor).getByRole('combobox', { name: 'Text Transform' }), {
+      target: { value: 'lowercase' },
+    });
+    fireEvent.click(within(editor).getByRole('button', { name: 'Apply' }));
+
+    const saved = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(within(saved).getByText('Text Transform: Lowercase')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Customer Name' })).getByText('Customer Name'),
+    ).toHaveStyle({ textTransform: 'lowercase' });
+
+    fireEvent.click(within(saved).getByRole('button', { name: 'Delete Header Style' }));
+    expect(screen.queryByText('Text Transform: Lowercase')).toBeNull();
+    expect(
+      within(screen.getByRole('columnheader', { name: 'Customer Name' })).getByText('Customer Name').style
+        .textTransform,
+    ).toBe('');
+    expect(headerRow().style.fontWeight).toBe('');
   });
 
   it('keeps the current header when the font size is invalid', () => {

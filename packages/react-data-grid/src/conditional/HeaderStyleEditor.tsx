@@ -75,6 +75,7 @@ export function HeaderStyleEditor({
           value={draft.backgroundColor}
           fallback={DEFAULT_BACKGROUND}
           showValue
+          freeSelect
           onChange={(backgroundColor) => patch({ backgroundColor })}
         />
         <ColorField
@@ -83,6 +84,7 @@ export function HeaderStyleEditor({
           value={draft.textColor}
           fallback={DEFAULT_TEXT}
           showValue
+          freeSelect
           onChange={(textColor) => patch({ textColor })}
         />
         <label className="aits-format-field">

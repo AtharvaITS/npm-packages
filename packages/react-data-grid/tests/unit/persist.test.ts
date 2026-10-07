@@ -5,24 +5,50 @@ import {
   writePersisted,
   STORAGE_PREFIX,
 } from '../../src/core/persist';
+import type { ConditionalFormatRule, HeaderStyle } from '../../src/types';
 
 const ctx = { columnIds: ['name', 'age'], views: ['table', 'grid', 'list'] as const };
+const rule: ConditionalFormatRule = {
+  id: 'r1',
+  columnId: 'age',
+  operator: 'gt',
+  value: '10',
+  scope: 'cell',
+  style: { backgroundColor: '#ff0000', fontWeight: '700' },
+};
+const headerStyle: HeaderStyle = {
+  backgroundColor: '#112233',
+  textColor: '#ffffff',
+  fontSize: 14,
+  fontWeight: '700',
+  textTransform: 'uppercase',
+};
 const full = {
   view: 'grid' as const,
   sort: [{ columnId: 'age', direction: 'desc' as const }],
   pageSize: 50,
   columns: [{ id: 'name', width: 220, hidden: false, pinned: 'start' as const, order: 0 }],
+  formatRules: [] as ConditionalFormatRule[],
+  headerStyle: {} as HeaderStyle,
 };
 
 describe('persist', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());
 
-  it('writes { v: 1, view, sort, pageSize, columns } under the prefixed key', () => {
-    writePersisted('emp', full);
+  it('writes view, sort, page size, columns, formatting rules and header style', () => {
+    writePersisted('emp', { ...full, formatRules: [rule], headerStyle });
     const raw = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'emp')!);
-    expect(raw).toEqual({ v: 1, ...full });
-    expect(Object.keys(raw).sort()).toEqual(['columns', 'pageSize', 'sort', 'v', 'view']);
+    expect(raw).toEqual({ v: 1, ...full, formatRules: [rule], headerStyle });
+    expect(Object.keys(raw).sort()).toEqual([
+      'columns',
+      'formatRules',
+      'headerStyle',
+      'pageSize',
+      'sort',
+      'v',
+      'view',
+    ]);
   });
 
   it('never stores selection, search, filters or page', () => {
@@ -66,6 +92,43 @@ describe('persist', () => {
     expect(saved.view).toBeUndefined();
     expect(saved.sort).toEqual([]);
     expect(saved.columns).toEqual([{ id: 'age', order: 1, width: 90 }]);
+  });
+
+  it('round-trips formatting rules and header style, and drops invalid ones', () => {
+    writePersisted('emp', {
+      ...full,
+      formatRules: [
+        rule,
+        { ...rule, id: 'gone', columnId: 'missing' },
+        { ...rule, id: 'bad', operator: 'nope' as never },
+      ],
+      headerStyle: { ...headerStyle, fontSize: 0, fontWeight: 'nope' as never },
+    });
+    const saved = readPersisted('emp', { ...ctx, views: [...ctx.views] })!;
+    expect(saved.formatRules).toEqual([rule]);
+    expect(saved.headerStyle).toEqual({
+      backgroundColor: '#112233',
+      textColor: '#ffffff',
+      textTransform: 'uppercase',
+    });
+  });
+
+  it('treats a saved empty rule list and empty header style as an explicit delete', () => {
+    writePersisted('emp', { ...full, formatRules: [], headerStyle: {} });
+    const saved = readPersisted('emp', { ...ctx, views: [...ctx.views] })!;
+    expect(saved.formatRules).toEqual([]);
+    expect(saved.headerStyle).toEqual({});
+  });
+
+  it('leaves formatting fields unset when an older payload omits them', () => {
+    localStorage.setItem(
+      STORAGE_PREFIX + 'emp',
+      JSON.stringify({ v: 1, view: 'grid', sort: [], pageSize: 25, columns: [] }),
+    );
+    const saved = readPersisted('emp', { ...ctx, views: [...ctx.views] })!;
+    expect(saved.formatRules).toBeUndefined();
+    expect(saved.headerStyle).toBeUndefined();
+    expect(saved.view).toBe('grid');
   });
 
   it('falls back to memory when storage throws', () => {

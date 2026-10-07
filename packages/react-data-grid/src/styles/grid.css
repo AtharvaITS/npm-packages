@@ -503,6 +503,7 @@
     font: inherit;
     color: inherit;
     text-align: inherit;
+    text-transform: inherit;
     cursor: pointer;
   }
   .aits-header-cell[data-align='end'] .aits-sort-button {
@@ -516,6 +517,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-transform: var(--aits-header-transform, inherit);
   }
   .aits-sort-indicator {
     display: inline-flex;
