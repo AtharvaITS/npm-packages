@@ -293,10 +293,10 @@ The toolbar **Export** button opens a dialog. Pick what to export and a format, 
 
 | Scope | Rows | Columns |
 |---|---|---|
-| Current Table View | Every row matching the current search, filters, and sort | Visible columns |
-| All Data | Every source row, in the original order, ignoring search and filters | All columns, including hidden ones |
-| Current Page | The rows on the current page | Visible columns |
-| Selected Rows | The current selection. A selected row that is hidden by search or filters is still included. | Visible columns |
+| Current Table View | Every row matching the current search, filters, and sort | All columns, including hidden ones, of every type |
+| All Data | Every source row, in the original order, ignoring search and filters | All columns, including hidden ones, of every type |
+| Current Page | The rows on the current page | All columns, including hidden ones, of every type |
+| Selected Rows | The current selection. A selected row that is hidden by search or filters is still included. | All columns, including hidden ones, of every type |
 
 Formats are **CSV** (UTF-8 with BOM), **Excel** (`.xlsx`), and **PDF** (landscape A4). In scroll mode there is no page, so Current Page exports the same rows as Current Table View. In server mode only the rows loaded in the grid can be exported.
 

@@ -67,9 +67,12 @@ function indexesFor<TRow>(input: CollectExportInput<TRow>): number[] {
   }
 }
 
-/** Rows and visible text for one export scope. Values match the grid's cell formatting. */
+/**
+ * Rows and cell text for one export scope. Values match the grid's cell formatting.
+ * Every scope includes every column, including hidden ones, of every type.
+ */
 export function collectExport<TRow>(input: CollectExportInput<TRow>): ExportTable {
-  const columns = input.scope === 'all' ? input.columns : input.visibleColumns;
+  const columns = input.columns;
   const indexes = indexesFor(input);
   return {
     headers: columns.map((column) => column.header),

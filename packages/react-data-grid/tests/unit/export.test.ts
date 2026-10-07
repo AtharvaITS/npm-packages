@@ -47,10 +47,11 @@ function collect(
 }
 
 describe('export scopes', () => {
-  it('exports the filtered sorted view with visible columns only', () => {
+  it('exports the filtered sorted view with every column, including hidden ones', () => {
     const table = collect({ search: 'cs', sort: [{ columnId: 'name', direction: 'desc' }] });
-    expect(table.headers).toEqual(['Name', 'Role']);
+    expect(table.headers).toEqual(['Name', 'Role', 'City']);
     expect(table.rows.map((row) => row[0])).toEqual(['Grace', 'Alan']);
+    expect(table.rows[0]?.[2]).toBe('New York');
   });
 
   it('exports every source row and hidden columns for all data', () => {
@@ -62,7 +63,7 @@ describe('export scopes', () => {
 
   it('exports the indexes of the current page', () => {
     const table = collect({ scope: 'page', displayIndexes: [1] });
-    expect(table.rows).toEqual([['Alan', 'CS']]);
+    expect(table.rows).toEqual([['Alan', 'CS', 'Wilmslow']]);
   });
 
   it('exports selected rows, including a selection hidden by the current search', () => {
