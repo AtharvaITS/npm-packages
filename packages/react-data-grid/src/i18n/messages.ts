@@ -3,6 +3,8 @@ import type {
   FormatFontStyle,
   FormatFontWeight,
   FormatOperator,
+  HeaderFontWeight,
+  HeaderTextTransform,
   Messages,
 } from '../types';
 
@@ -56,6 +58,21 @@ const formatFontStyles: Record<FormatFontStyle, string> = {
   default: 'Default',
   normal: 'Normal',
   italic: 'Italic',
+};
+
+const headerStyleFontWeights: Record<HeaderFontWeight, string> = {
+  default: 'Default',
+  normal: 'Normal',
+  '500': 'Medium',
+  '600': 'Semi Bold',
+  '700': 'Bold',
+};
+
+const headerStyleTransforms: Record<HeaderTextTransform, string> = {
+  default: 'Default',
+  uppercase: 'Uppercase',
+  lowercase: 'Lowercase',
+  capitalize: 'Capitalize',
 };
 
 export const defaultMessages: Messages = {
@@ -147,6 +164,16 @@ export const defaultMessages: Messages = {
   formatValidationRange: 'Enter both values.',
   formatValidationNumber: 'Enter a valid number.',
   formatValidationDate: 'Enter a valid date.',
+  headerStyle: 'Header Style',
+  headerStyleBackground: 'Background Color',
+  headerStyleText: 'Text Color',
+  headerStyleFontSize: 'Font Size',
+  headerStyleFontSizeUnit: 'px',
+  headerStyleFontWeight: 'Font Weight',
+  headerStyleTextTransform: 'Text Transform',
+  headerStyleApply: 'Apply',
+  headerStyleFontWeights,
+  headerStyleTransforms,
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {
@@ -161,5 +188,13 @@ export function mergeMessages(partial?: Partial<Messages>): Messages {
       ...(partial.formatFontWeights ?? {}),
     },
     formatFontStyles: { ...defaultMessages.formatFontStyles, ...(partial.formatFontStyles ?? {}) },
+    headerStyleFontWeights: {
+      ...defaultMessages.headerStyleFontWeights,
+      ...(partial.headerStyleFontWeights ?? {}),
+    },
+    headerStyleTransforms: {
+      ...defaultMessages.headerStyleTransforms,
+      ...(partial.headerStyleTransforms ?? {}),
+    },
   };
 }

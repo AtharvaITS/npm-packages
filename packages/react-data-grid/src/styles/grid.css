@@ -398,7 +398,7 @@
   .aits-header-row {
     height: auto;
     min-height: var(--aits-header-height);
-    background: var(--aits-color-surface-alt);
+    background: var(--aits-header-bg, var(--aits-color-surface-alt));
     font-weight: 600;
   }
   .aits-cell,
@@ -459,7 +459,7 @@
     background: var(--aits-color-surface);
   }
   .aits-header-cell[data-pinned] {
-    background: var(--aits-color-surface-alt);
+    background: var(--aits-header-bg, var(--aits-color-surface-alt));
   }
   .aits-tbody .aits-row:nth-child(even) .aits-cell[data-pinned] {
     background: var(--aits-color-surface-alt);
@@ -1043,6 +1043,18 @@
   }
   .aits-format-color input[type='color']:disabled {
     opacity: 0.45;
+  }
+  .aits-format-color-value {
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+  }
+  .aits-format-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .aits-format-editor > .aits-export-fieldset .aits-format-size .aits-input {
+    width: 5rem;
   }
   .aits-format-actions-end {
     justify-content: flex-end;

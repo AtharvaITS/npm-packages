@@ -240,20 +240,23 @@ export function RuleEditor({
   );
 }
 
-function ColorField({
+export function ColorField({
   label,
   applyLabel,
   value,
   fallback,
   onChange,
+  showValue = false,
 }: {
   label: string;
   applyLabel: string;
   value: string;
   fallback: string;
   onChange(value: string): void;
+  showValue?: boolean;
 }) {
   const enabled = value !== '';
+  const shown = enabled ? value : fallback;
   return (
     <div className="aits-format-color">
       <label>
@@ -269,9 +272,10 @@ function ColorField({
         type="color"
         aria-label={label}
         disabled={!enabled}
-        value={enabled ? value : fallback}
+        value={shown}
         onChange={(event) => onChange(event.target.value)}
       />
+      {showValue && enabled && <span className="aits-format-color-value">{shown}</span>}
     </div>
   );
 }

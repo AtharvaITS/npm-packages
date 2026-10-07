@@ -209,6 +209,16 @@ export interface Messages {
   formatValidationRange: string;
   formatValidationNumber: string;
   formatValidationDate: string;
+  headerStyle: string;
+  headerStyleBackground: string;
+  headerStyleText: string;
+  headerStyleFontSize: string;
+  headerStyleFontSizeUnit: string;
+  headerStyleFontWeight: string;
+  headerStyleTextTransform: string;
+  headerStyleApply: string;
+  headerStyleFontWeights: Record<HeaderFontWeight, string>;
+  headerStyleTransforms: Record<HeaderTextTransform, string>;
 }
 
 export type FormatOperator =
@@ -232,6 +242,20 @@ export type FormatScope = 'cell' | 'row';
 export type FormatFontWeight = 'default' | 'normal' | '600' | '700';
 
 export type FormatFontStyle = 'default' | 'normal' | 'italic';
+
+/** Header font weight. Medium is 500; 600 and 700 match conditional formatting. */
+export type HeaderFontWeight = 'default' | 'normal' | '500' | '600' | '700';
+
+export type HeaderTextTransform = 'default' | 'uppercase' | 'lowercase' | 'capitalize';
+
+/** Visual style for the table header. Does not change column header text. */
+export interface HeaderStyle {
+  backgroundColor?: string;
+  textColor?: string;
+  fontSize?: number;
+  fontWeight?: HeaderFontWeight;
+  textTransform?: HeaderTextTransform;
+}
 
 export interface ConditionalFormatStyle {
   backgroundColor?: string;
@@ -380,6 +404,9 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   formatRules?: ConditionalFormatRule[];
   defaultFormatRules?: ConditionalFormatRule[];
   onFormatRulesChange?: (rules: ConditionalFormatRule[]) => void;
+  headerStyle?: HeaderStyle;
+  defaultHeaderStyle?: HeaderStyle;
+  onHeaderStyleChange?: (style: HeaderStyle) => void;
 
   // ---- Pagination / scrolling -------------------------------------------
   pagination?: 'pages' | 'scroll';
