@@ -944,12 +944,16 @@
   }
 
   /* ---------- Conditional formatting ---------- */
+  .aits-format-panel,
+  .aits-format-editor {
+    width: min(26rem, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+  }
   .aits-format-panel {
     min-width: min(22rem, calc(100vw - 16px));
   }
   .aits-format-editor {
     min-width: min(24rem, calc(100vw - 16px));
-    max-height: min(40rem, calc(100vh - 16px));
   }
   .aits-format-empty {
     margin: 0.25rem 0.25rem 0.5rem;

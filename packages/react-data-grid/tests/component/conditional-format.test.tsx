@@ -59,6 +59,7 @@ describe('conditional formatting', () => {
     expect(within(list).getByText('No conditional formatting rules added.')).toBeInTheDocument();
 
     fireEvent.click(within(list).getByRole('button', { name: 'Add rule' }));
+    expect(screen.queryByRole('dialog', { name: 'Conditional Formatting' })).toBeNull();
     const editor = screen.getByRole('dialog', { name: 'Add rule' });
     fireEvent.click(within(editor).getByRole('button', { name: 'Save' }));
     expect(within(editor).getByRole('alert')).toHaveTextContent('Select a column.');
@@ -90,10 +91,11 @@ describe('conditional formatting', () => {
     fireEvent.click(within(editor).getByRole('button', { name: 'Save' }));
 
     expect(screen.queryByRole('dialog', { name: 'Add rule' })).toBeNull();
-    expect(within(list).getByText('Status | Equal | Active | Cell')).toBeInTheDocument();
-    expect(within(list).getByText('Background: #00ff00')).toBeInTheDocument();
-    expect(within(list).getByText('Text: #ffffff')).toBeInTheDocument();
-    expect(within(list).getByText('Font: 700, Italic')).toBeInTheDocument();
+    const saved = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(within(saved).getByText('Status | Equal | Active | Cell')).toBeInTheDocument();
+    expect(within(saved).getByText('Background: #00ff00')).toBeInTheDocument();
+    expect(within(saved).getByText('Text: #ffffff')).toBeInTheDocument();
+    expect(within(saved).getByText('Font: 700, Italic')).toBeInTheDocument();
 
     const active = cellOf('Ada', 'Active');
     expect(painted(active)).toBe(true);
@@ -103,7 +105,8 @@ describe('conditional formatting', () => {
     expect(active.style.fontStyle).toBe('italic');
     expect(painted(cellOf('Bea', 'Paused'))).toBe(false);
 
-    fireEvent.click(within(list).getByRole('button', { name: 'Edit' }));
+    fireEvent.click(within(saved).getByRole('button', { name: 'Edit' }));
+    expect(screen.queryByRole('dialog', { name: 'Conditional Formatting' })).toBeNull();
     const edit = screen.getByRole('dialog', { name: 'Edit rule' });
     expect(within(edit).getByRole('radio', { name: 'Status' })).toBeChecked();
     expect(within(edit).getByRole('combobox', { name: 'Operator' })).toHaveValue('equal');
@@ -114,8 +117,9 @@ describe('conditional formatting', () => {
     expect(painted(cellOf('Ada', 'Active'))).toBe(false);
     expect(painted(cellOf('Bea', 'Paused'))).toBe(true);
 
-    fireEvent.click(within(list).getByRole('button', { name: /Delete/ }));
-    expect(within(list).getByText('No conditional formatting rules added.')).toBeInTheDocument();
+    const edited = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    fireEvent.click(within(edited).getByRole('button', { name: /Delete/ }));
+    expect(within(edited).getByText('No conditional formatting rules added.')).toBeInTheDocument();
     expect(painted(cellOf('Bea', 'Paused'))).toBe(false);
   });
 
@@ -129,12 +133,14 @@ describe('conditional formatting', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Format/ }));
     const list = screen.getByRole('dialog', { name: 'Conditional Formatting' });
     fireEvent.click(within(list).getByRole('button', { name: 'Add rule' }));
+    expect(screen.queryByRole('dialog', { name: 'Conditional Formatting' })).toBeNull();
     const editor = screen.getByRole('dialog', { name: 'Add rule' });
     fireEvent.click(within(editor).getByRole('radio', { name: 'Country' }));
     fireEvent.click(within(editor).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog', { name: 'Add rule' })).toBeNull();
-    expect(within(list).getByText('Status | Equal | Active | Cell')).toBeInTheDocument();
-    expect(within(list).queryByText(/Country/)).toBeNull();
+    const restored = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(within(restored).getByText('Status | Equal | Active | Cell')).toBeInTheDocument();
+    expect(within(restored).queryByText(/Country/)).toBeNull();
     expect(painted(cellOf('Ada', 'Active'))).toBe(true);
   });
 
@@ -197,14 +203,15 @@ describe('conditional formatting', () => {
     setColor(editor, 'Background', '#ffff00');
     fireEvent.click(within(editor).getByRole('button', { name: 'Save' }));
 
-    expect(within(list).getByText('Amount | Greater than | 10000 | Row')).toBeInTheDocument();
+    const saved = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(within(saved).getByText('Amount | Greater than | 10000 | Row')).toBeInTheDocument();
     expect(painted(cellOf('Ada', 'Ada'))).toBe(true);
     expect(painted(cellOf('Ada', 'Active'))).toBe(true);
     expect(cellOf('Ada', 'Ada').style.backgroundColor).toBe('rgb(255, 255, 0)');
     expect(painted(cellOf('Bea', 'Bea'))).toBe(false);
     expect(rowOf('Ada')).toHaveAttribute('data-formatted', 'true');
 
-    fireEvent.click(within(list).getByRole('button', { name: 'Close' }));
+    fireEvent.click(within(saved).getByRole('button', { name: 'Close' }));
     const header = screen.getByRole('columnheader', { name: /Amount/ });
     fireEvent.click(within(header).getByRole('button', { name: 'Amount' }));
     expect(header).toHaveAttribute('aria-sort', 'ascending');

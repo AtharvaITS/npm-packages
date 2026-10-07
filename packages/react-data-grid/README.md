@@ -87,12 +87,43 @@ The component **never modifies** the array you pass.
 />
 ```
 
-Controlled view:
+Both snippets show a table, cards, or a list. The difference is **who remembers** the choice.
+
+Use `defaultView` when the grid’s own toolbar buttons are enough. You tell it the start, then it remembers by itself:
+
+```tsx
+<ReactDataGrid data={products} defaultView="grid" />
+```
+
+1. Page opens → cards.
+2. User clicks **Table** on the grid toolbar → table.
+3. Your other code never hears about it. That is fine if nothing else on the page cares.
+
+Use `view` + `onViewChange` when a button **you** wrote, outside the grid, must switch it. Imagine this page:
+
+```text
+[ Show as cards ]          ← your button, not the grid’s
+Table                      ← a title that must match the view
+┌──────────────────────┐
+│  grid (table now)    │
+└──────────────────────┘
+```
+
+`defaultView` cannot do this. It has no handle your button can pull. Keep the choice in `view` so the button, the title, and the grid all share it:
 
 ```tsx
 const [view, setView] = useState<ViewType>('table');
-<ReactDataGrid data={rows} view={view} onViewChange={setView} />;
+
+<h2>{view === 'grid' ? 'Cards' : 'Table'}</h2>
+<button onClick={() => setView('grid')}>Show as cards</button>
+<ReactDataGrid data={products} view={view} onViewChange={setView} />
 ```
+
+1. Page opens → `view` is `'table'` → title says **Table**, grid is a table.
+2. User clicks **your** “Show as cards” button → `setView('grid')` → title says **Cards**, grid becomes cards.
+3. User then clicks **List** on the grid toolbar → `onViewChange` calls `setView('list')` → title stays in step with the grid.
+
+`onViewChange={setView}` is the line that connects the grid’s toolbar back to your `view`. Without it, step 3 snaps the grid back to table, because `view` is still `'table'`.
 
 Custom layouts keep the component's focus handling, roles and selection:
 

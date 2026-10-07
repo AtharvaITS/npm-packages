@@ -102,7 +102,7 @@ export function RuleEditor({
       anchorRef={anchorRef}
       label={title}
       className="aits-format-editor"
-      alignEnd
+      centered
     >
       <div className="aits-popover-title">{title}</div>
       <fieldset className="aits-export-fieldset">

@@ -19,12 +19,10 @@ export function FormatButton() {
   const [open, setOpen] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const button = useRef<HTMLButtonElement>(null);
-  const editorAnchor = useRef<HTMLElement | null>(null);
 
   const closeEditor = () => setEditor(null);
 
-  const openEditor = (anchor: HTMLElement, rule: ConditionalFormatRule | null) => {
-    editorAnchor.current = anchor;
+  const openEditor = (rule: ConditionalFormatRule | null) => {
     setEditor({ rule });
   };
 
@@ -58,22 +56,19 @@ export function FormatButton() {
         {rules.length > 0 && <span className="aits-badge">{rules.length}</span>}
       </button>
       <Popover
-        open={open}
-        onClose={() => {
-          closeEditor();
-          setOpen(false);
-        }}
+        open={open && editor === null}
+        onClose={() => setOpen(false)}
         anchorRef={button}
         label={messages.formatTitle}
         className="aits-format-panel"
-        alignEnd
+        centered
       >
         <div className="aits-popover-title">{messages.formatTitle}</div>
         <div className="aits-popover-actions">
           <button
             type="button"
             className="aits-button"
-            onClick={(event) => openEditor(event.currentTarget, null)}
+            onClick={() => openEditor(null)}
           >
             {messages.formatAdd}
           </button>
@@ -111,7 +106,7 @@ export function FormatButton() {
                     <button
                       type="button"
                       className="aits-button aits-button-quiet"
-                      onClick={(event) => openEditor(event.currentTarget, rule)}
+                      onClick={() => openEditor(rule)}
                     >
                       {messages.formatEdit}
                     </button>
@@ -141,16 +136,16 @@ export function FormatButton() {
             {messages.formatClose}
           </button>
         </div>
-        {editor && (
-          <RuleEditor
-            key={editor.rule?.id ?? 'new'}
-            anchorRef={editorAnchor}
-            initial={editor.rule}
-            onCancel={closeEditor}
-            onSave={save}
-          />
-        )}
       </Popover>
+      {editor && (
+        <RuleEditor
+          key={editor.rule?.id ?? 'new'}
+          anchorRef={button}
+          initial={editor.rule}
+          onCancel={closeEditor}
+          onSave={save}
+        />
+      )}
     </>
   );
 }
