@@ -162,6 +162,36 @@ describe('anchored popover placement', () => {
     expect(menu().style.top).toBe('180px');
   });
 
+  it('places a cursor menu inside the viewport', () => {
+    anchorRect = rect(10, 10, 20, 20);
+    const ref = { current: document.createElement('button') };
+    const { rerender } = render(
+      <Menu
+        open
+        onClose={() => {}}
+        anchorRef={ref}
+        label="Menu"
+        point={{ x: 980, y: 760 }}
+        items={[{ label: 'One', onSelect() {} }]}
+      />,
+    );
+    expect(menu().style.position).toBe('fixed');
+    expect(menu().style.left).toBe('816px');
+    expect(menu().style.top).toBe('660px');
+    rerender(
+      <Menu
+        open
+        onClose={() => {}}
+        anchorRef={ref}
+        label="Menu"
+        point={{ x: 0, y: 0 }}
+        items={[{ label: 'One', onSelect() {} }]}
+      />,
+    );
+    expect(menu().style.left).toBe('8px');
+    expect(menu().style.top).toBe('8px');
+  });
+
   it('uses the top layer when the Popover API exists', () => {
     anchorRect = rect(500, 100, 26, 26);
     const show = vi.fn();

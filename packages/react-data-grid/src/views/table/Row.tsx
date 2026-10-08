@@ -3,6 +3,7 @@ import { POS_COL, POS_ROW } from '../../a11y/useRovingFocus';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
 import { isInteractiveTarget } from '../cellContent';
+import { handleRowContextMenu } from '../rowContextMenu';
 import { SelectCheckbox } from '../SelectCheckbox';
 import { Cell } from './Cell';
 
@@ -64,6 +65,9 @@ export const Row = memo(function Row({
       data-selected={selected || undefined}
       data-row-id={id}
       onClick={onClick}
+      onContextMenu={(event) =>
+        handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)
+      }
     >
       {hasSelect && (
         <div

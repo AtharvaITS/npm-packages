@@ -9,6 +9,7 @@ import {
   isInteractiveTarget,
   isSafeImageSrc,
 } from '../cellContent';
+import { handleRowContextMenu } from '../rowContextMenu';
 
 export interface ListItemProps {
   rowIndex: number;
@@ -168,6 +169,9 @@ export const ListItem = memo(function ListItem({
       data-selected={selected || undefined}
       data-row-id={id}
       onClick={onClick}
+      onContextMenu={(event) =>
+        handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)
+      }
       {...itemProps}
     >
       {hasSelect && (

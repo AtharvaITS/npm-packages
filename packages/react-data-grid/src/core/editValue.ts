@@ -1,5 +1,6 @@
 import type { EffectiveColumn } from './columnState';
-import type { ResolvedType } from './columns';
+import { getColumnValue, type ResolvedType } from './columns';
+import { isRecord, type AnyRow } from './normalize';
 
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -133,4 +134,69 @@ export function parseEditedValue(
       return unreachable;
     }
   }
+}
+
+/**
+ * Copy of `row` with one field replaced. A key that literally contains dots wins
+ * over path splitting, matching `getValue`. The input row is not mutated.
+ */
+export function withFieldValue<TRow>(row: TRow, path: string, value: unknown): TRow {
+  if (!isRecord(row)) return row;
+  if (Object.prototype.hasOwnProperty.call(row, path) || path.indexOf('.') === -1) {
+    return { ...row, [path]: value } as TRow;
+  }
+  const keys = path.split('.');
+  const root: AnyRow = { ...row };
+  let cursor = root;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i]!;
+    const child = cursor[key];
+    const copy = isRecord(child) ? { ...child } : {};
+    cursor[key] = copy;
+    cursor = copy;
+  }
+  cursor[keys[keys.length - 1]!] = value;
+  return root as TRow;
+}
+
+export type RowDraftResult<TRow> =
+  { ok: true; nextRow: TRow } | { ok: false; errors: Record<string, true> };
+
+/**
+ * Validates changed drafts and builds the next row. Unchanged fields are left
+ * alone, so a column `valueSetter` does not run unless that field was edited.
+ */
+export function applyRowDrafts<TRow>(
+  row: TRow,
+  columns: readonly EffectiveColumn<TRow>[],
+  drafts: Readonly<Record<string, string | boolean>>,
+  initial: Readonly<Record<string, string | boolean>>,
+): RowDraftResult<TRow> {
+  const errors: Record<string, true> = {};
+  const changes: { column: EffectiveColumn<TRow>; value: unknown }[] = [];
+  for (const column of columns) {
+    if (!canEditColumn(column)) continue;
+    const draft = drafts[column.id];
+    if (draft === undefined || Object.is(draft, initial[column.id])) continue;
+    const previous = getColumnValue(row, column);
+    const parsed = parseEditedValue(column, previous, draft);
+    if (!parsed.ok) errors[column.id] = true;
+    else changes.push({ column, value: parsed.value });
+  }
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+
+  let next = row;
+  for (const change of changes) {
+    if (change.column.valueSetter) {
+      try {
+        next = change.column.valueSetter(next, change.value);
+      } catch {
+        errors[change.column.id] = true;
+        return { ok: false, errors };
+      }
+    } else if (change.column.field) {
+      next = withFieldValue(next, change.column.field, change.value);
+    }
+  }
+  return { ok: true, nextRow: next };
 }

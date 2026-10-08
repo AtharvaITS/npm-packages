@@ -26,6 +26,7 @@ export type {
   GridState,
   ListItemContext,
   Messages,
+  RowEdit,
   RowId,
   SelectionMode,
   SortDirection,

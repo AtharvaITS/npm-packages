@@ -172,6 +172,18 @@ export interface Messages {
   clearSelection: string;
   pageStatus: (page: number, pageCount: number) => string;
   resizeColumn: string;
+  rowMenu: string;
+  viewRow: string;
+  editRow: string;
+  deleteRow: string;
+  rowDetails: string;
+  editRecord: string;
+  confirmDelete: string;
+  confirmDeleteMessage: string;
+  close: string;
+  save: string;
+  cancel: string;
+  invalidValue: string;
 }
 
 export interface CellContext<TRow = Record<string, unknown>> {
@@ -200,6 +212,18 @@ export interface CardContext<TRow = Record<string, unknown>> {
 }
 
 export type ListItemContext<TRow = Record<string, unknown>> = CardContext<TRow>;
+
+/**
+ * A saved row from the context-menu edit dialog.
+ * The grid does not write this into `data`. The host updates its list or calls an API.
+ */
+export interface RowEdit<TRow = Record<string, unknown>> {
+  /** Row that was right-clicked, before the edit. */
+  row: TRow;
+  rowId: RowId;
+  /** Row after the edited fields are applied. */
+  nextRow: TRow;
+}
 
 /** A committed double-click edit. The grid does not write this into `data`. */
 export interface CellEdit<TRow = Record<string, unknown>> {
@@ -320,6 +344,21 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
    * The parent updates `data` or sends the value to an API. Escape and blur do not call this.
    */
   onCellEdit?: (edit: CellEdit<TRow>) => void;
+  /**
+   * Right-click a row to view, edit, or delete that record.
+   * Off unless set, so the browser menu stays available on other grids.
+   */
+  enableRowContextMenu?: boolean;
+  /**
+   * Called when the edit dialog is saved with valid values.
+   * The host updates `data` or sends `nextRow` to an API. Cancel does not call this.
+   */
+  onRowEdit?: (edit: RowEdit<TRow>) => void;
+  /**
+   * Called when delete is confirmed.
+   * The host removes the row or calls an API. Choosing No does not call this.
+   */
+  onRowDelete?: (row: TRow, rowId: RowId) => void;
 
   // ---- Columns / persistence --------------------------------------------
   columnState?: ColumnStateItem[];

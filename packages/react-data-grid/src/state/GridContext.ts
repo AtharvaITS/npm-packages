@@ -62,6 +62,9 @@ export interface GridContextValue<TRow = any> {
   /** Enter: parse the draft and call `onCellEdit` when the value is valid. */
   commitEdit(draft: string | boolean): void;
   cancelEdit(): void;
+  /** Right-click row actions. Off unless `enableRowContextMenu` is set. */
+  enableRowContextMenu: boolean;
+  openRowMenu(rowIndex: number, x: number, y: number, anchor: HTMLElement): void;
   announce(text: string): void;
   rowHeight: number;
   /** CSS height of the scroll area in scroll mode. */

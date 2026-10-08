@@ -75,6 +75,18 @@ export const defaultMessages: Messages = {
   clearSelection: 'Clear selection',
   pageStatus: (page, pageCount) => `Page ${page} of ${pageCount}`,
   resizeColumn: 'Resize column',
+  rowMenu: 'Row actions',
+  viewRow: 'View',
+  editRow: 'Edit',
+  deleteRow: 'Delete',
+  rowDetails: 'Details',
+  editRecord: 'Edit record',
+  confirmDelete: 'Confirm delete',
+  confirmDeleteMessage: 'Are you sure you want to delete this record?',
+  close: 'Close',
+  save: 'Save',
+  cancel: 'Cancel',
+  invalidValue: 'Enter a valid value.',
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {

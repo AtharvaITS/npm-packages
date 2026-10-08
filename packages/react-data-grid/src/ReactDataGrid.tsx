@@ -50,6 +50,7 @@ import { LoadingOverlay } from './states/LoadingOverlay';
 import { NoResultsState } from './states/NoResultsState';
 import { Toolbar } from './toolbar/Toolbar';
 import type { ReactDataGridProps, Density, RowId, ThemeToken } from './types';
+import { RowActions, type RowDialogState, type RowMenuState } from './views/RowActions';
 import { GridView } from './views/grid/GridView';
 import { ListView } from './views/list/ListView';
 import { TableView } from './views/table/TableView';
@@ -417,6 +418,31 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   const cancelEdit = useCallback(() => {
     setEditing(null);
   }, []);
+
+  const enableRowContextMenu = props.enableRowContextMenu === true;
+  const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
+  const [rowDialog, setRowDialog] = useState<RowDialogState | null>(null);
+  const rowMenuAnchorRef = useRef<HTMLElement | null>(null);
+  const openRowMenu = useCallback(
+    (rowIndex: number, x: number, y: number, anchor: HTMLElement) => {
+      if (!enableRowContextMenu || rowDialog) return;
+      const rowId = rowIds[rowIndex];
+      if (rowId === undefined) return;
+      rowMenuAnchorRef.current = anchor;
+      setRowMenu({ rowId, x, y });
+    },
+    [enableRowContextMenu, rowDialog, rowIds],
+  );
+  const closeRowMenu = useCallback(() => setRowMenu(null), []);
+  const openRowDialog = useCallback((kind: RowDialogState['kind'], id: RowId) => {
+    setRowMenu(null);
+    setRowDialog({ kind, rowId: id });
+  }, []);
+  const closeRowDialog = useCallback(() => setRowDialog(null), []);
+  useEffect(() => {
+    if (rowMenu && !rowIds.includes(rowMenu.rowId)) setRowMenu(null);
+    if (rowDialog && !rowIds.includes(rowDialog.rowId)) setRowDialog(null);
+  }, [rowIds, rowMenu, rowDialog]);
   const commitEdit = useCallback(
     (draft: string | boolean) => {
       const current = editing;
@@ -483,6 +509,8 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     startEdit,
     commitEdit,
     cancelEdit,
+    enableRowContextMenu,
+    openRowMenu,
     announce,
     rowHeight,
     scrollHeight: props.height === undefined || props.height === 'auto' ? 600 : props.height,
@@ -533,6 +561,16 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
           {loading && hasRows && <LoadingOverlay skeleton={false} />}
         </div>
         {showPagination && <Pagination />}
+        {enableRowContextMenu && (
+          <RowActions
+            menu={rowMenu}
+            anchorRef={rowMenuAnchorRef}
+            dialog={rowDialog}
+            onCloseMenu={closeRowMenu}
+            onOpenDialog={openRowDialog}
+            onCloseDialog={closeRowDialog}
+          />
+        )}
         <LiveRegion message={liveMessage} />
       </GridContext.Provider>
     </div>

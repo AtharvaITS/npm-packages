@@ -9,6 +9,7 @@ import {
   isInteractiveTarget,
   isSafeImageSrc,
 } from '../cellContent';
+import { handleRowContextMenu } from '../rowContextMenu';
 import { SelectCheckbox } from '../SelectCheckbox';
 
 export interface CardProps {
@@ -153,6 +154,9 @@ export const Card = memo(function Card({
       data-selected={selected || undefined}
       data-row-id={id}
       onClick={onClick}
+      onContextMenu={(event) =>
+        handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)
+      }
       {...itemProps}
     >
       {hasSelect && (

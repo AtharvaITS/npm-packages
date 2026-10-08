@@ -4,7 +4,7 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, paging or virtual scrolling (100,000+ rows), selection, a row context menu, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -19,14 +19,15 @@
 5. [Pagination and scrolling](#pagination-and-scrolling)
 6. [Server (host-managed) mode](#server-host-managed-mode)
 7. [Selection and activation](#selection-and-activation)
-8. [Column management and saved preferences](#column-management-and-saved-preferences)
-9. [Theming](#theming)
-10. [Localization and right-to-left](#localization-and-right-to-left)
-11. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
-12. [Accessibility](#accessibility)
-13. [Server-side rendering](#server-side-rendering)
-14. [Browser support](#browser-support)
-15. [Props reference](#props-reference)
+8. [Row context menu](#row-context-menu)
+9. [Column management and saved preferences](#column-management-and-saved-preferences)
+10. [Theming](#theming)
+11. [Localization and right-to-left](#localization-and-right-to-left)
+12. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
+13. [Accessibility](#accessibility)
+14. [Server-side rendering](#server-side-rendering)
+15. [Browser support](#browser-support)
+16. [Props reference](#props-reference)
 
 ---
 
@@ -162,7 +163,7 @@ const columns = createColumns<Employee>([
 | `header` | Header / label text | humanized field (`firstName` → “First Name”) |
 | `type` | `auto`, `text`, `number`, `currency`, `percent`, `boolean`, `date`, `image`, `enum` | `auto` (inferred; strings are never inferred as numbers/dates) |
 | `valueGetter(row)` | Derived value used for display, sort, filter and search | — |
-| `valueSetter(row, value)` | Row to commit after a double-click edit. Required to edit a `valueGetter` column; the grid reports it as `onCellEdit` `nextRow` | — |
+| `valueSetter(row, value)` | Row to commit after an edit. Required to edit a `valueGetter` column. A cell edit reports it as `onCellEdit` `nextRow`. A row-menu edit applies it into `onRowEdit` `nextRow` when that field changed | — |
 | `format(value, row)` | Display text only — sort/filter/search still use the raw value | locale-aware per type |
 | `formatOptions` | `Intl` options, e.g. `{ currency: 'EUR' }`, `{ dateStyle: 'long' }` | — |
 | `render(ctx)` | Custom content in every view. `ctx`: `row, rowId, value, formattedValue, column, view, selected` | — |
@@ -286,6 +287,43 @@ While loading, a spinner shows over the current rows. On error, a banner with **
 
 ---
 
+## Row context menu
+
+Off unless you set `enableRowContextMenu`. Right-click a row in the table, card grid, or list to open **View**, **Edit**, and **Delete** for that record. The browser menu is replaced only on those rows. The menu opens next to the pointer, stays inside the viewport, and only one menu is open at a time. It closes when you choose an action, click outside, press Escape, or right-click another row. Shift+F10 or the context-menu key opens it for the focused row.
+
+The actions use the row you right-clicked, not the currently selected row.
+
+```tsx
+const [rows, setRows] = useState(employees);
+
+<ReactDataGrid
+  data={rows}
+  columns={columns}
+  getRowId="id"
+  enableRowContextMenu
+  onRowEdit={(edit) => {
+    // edit: { row, rowId, nextRow }. Update local state, or send nextRow to your API.
+    setRows((current) => current.map((row) => (row.id === edit.rowId ? edit.nextRow : row)));
+  }}
+  onRowDelete={(row, rowId) => {
+    // Delete through your API, then drop the row from data.
+    setRows((current) => current.filter((item) => item.id !== rowId));
+  }}
+/>
+```
+
+- **View** opens a read-only dialog of the visible columns. Labels and values come from the same columns the grid displays. **Close**, Escape, or the backdrop dismisses it. Nothing is saved.
+- **Edit** opens a form filled from that row. **Save** checks the values, then calls `onRowEdit` with `{ row, rowId, nextRow }` and closes. **Cancel**, Escape, or the backdrop throws the form away and does not call `onRowEdit`. An invalid number or date stays open and shows “Enter a valid value.”
+- **Delete** asks you to confirm. **Yes** calls `onRowDelete(row, rowId)`. **No**, Escape, or the backdrop leaves the row in place and does not call `onRowDelete`.
+
+The grid does not write `data` and does not call your database. Your app updates the list, or calls an API inside those two handlers and then updates `data` from the response.
+
+Fields follow the visible columns. Hidden columns are omitted. A column is editable when it has a `field` and no `valueGetter`, or when it has a `valueSetter`. Columns with a custom `render` are shown in View and are not inputs in the edit form. Image columns are shown in View and are left unchanged by Save; double-click a cell to edit one. A `valueSetter` runs only for a field the user actually changed.
+
+Labels (**View**, **Edit**, **Delete**, **Details**, **Edit record**, **Confirm delete**, and the confirmation text) come from `messages`.
+
+---
+
 ## Column management and saved preferences
 
 In the table view, users can resize columns (drag the header edge, or Alt+←/→), reorder them (drag a header, or **Move left/right** in the column menu), hide or show them (column menu or **Columns** button), and pin them to the start or end. Hidden columns and column order also apply to the grid and list views.
@@ -382,7 +420,7 @@ The component targets **WCAG 2.2 AA**. It follows the WAI-ARIA grid, listbox and
 |---|---|
 | Table / grid view | ←/→/↑/↓ move · Home/End (row start/end) · Ctrl+Home/End (first/last) · PageUp/PageDown |
 | List view | ↑/↓ · Home/End · PageUp/PageDown |
-| Any record | Enter = activate (`onRowActivate`) · Space = select · Shift+Space = select range · Ctrl/⌘+A = select all |
+| Any record | Enter = activate (`onRowActivate`) · Space = select · Shift+Space = select range · Ctrl/⌘+A = select all · Shift+F10 or the context-menu key opens the row menu when `enableRowContextMenu` is set |
 | Table header | Enter/Space = sort (Shift = add to multi-sort) · Alt+↓ or Shift+F10 = column menu · Alt+←/→ = resize |
 | View switcher | ←/→ (↑/↓) · Home/End |
 | Menus / dialogs | ↑/↓ in menus · Esc closes and returns focus |
@@ -470,6 +508,9 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `isRowSelectable` | `(row) => boolean` | all rows |
 | `onRowActivate` | `(row, id, event) => void` | — |
 | `onCellEdit` | `(edit: { row, rowId, columnId, field, previousValue, value, nextRow? }) => void` | — |
+| `enableRowContextMenu` | `boolean` | `false` |
+| `onRowEdit` | `(edit: { row, rowId, nextRow }) => void` | — |
+| `onRowDelete` | `(row, rowId) => void` | — |
 
 ### Columns and persistence
 
@@ -493,7 +534,7 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 
 ### Exports
 
-`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CellEdit`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `SelectionMode`, `RowId`, `RowEdit`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
 
 ## License
 
