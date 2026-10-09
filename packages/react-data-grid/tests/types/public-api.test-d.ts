@@ -54,6 +54,14 @@ describe('public API types', () => {
     expectTypeOf<Awaited<ReturnType<Fetch>>['rows']>().toEqualTypeOf<Employee[]>();
   });
 
+  it('accepts sum aggregation on a column', () => {
+    const columns: ColumnDef<Employee>[] = [{ field: 'salary', type: 'number', aggregate: 'sum' }];
+    expectTypeOf(columns[0]!.aggregate).toEqualTypeOf<'sum' | undefined>();
+    // @ts-expect-error only "sum" is a supported aggregate
+    const bad: ColumnDef<Employee> = { field: 'salary', aggregate: 'avg' };
+    void bad;
+  });
+
   it('rejects unknown props and invalid values', () => {
     // @ts-expect-error unknown prop
     const bad: ReactDataGridProps<Employee> = { data: [], notAProp: true };

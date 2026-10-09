@@ -1,4 +1,11 @@
 import type { SortItem } from '../types';
+import {
+  addAggregateTotals,
+  addRowsToTotals,
+  aggregateColumns,
+  createAggregateTotals,
+  finalizeAggregateTotals,
+} from './aggregate';
 import { getColumnValue, isEmptyValue, type ResolvedColumn } from './columns';
 import { formatValue, toDate, toNumber, type FormatOptions } from './format';
 import { sortIndexes } from './sort';
@@ -23,6 +30,12 @@ export interface GroupDisplayItem {
   expanded: boolean;
   /** Index of one child row, used only to format the group label. */
   sampleIndex: number;
+  /**
+   * Totals for columns with `aggregate`. Covers every leaf in the group,
+   * including descendants hidden by collapse. Omitted when nothing is aggregated.
+   * These totals are not written onto the source rows.
+   */
+  aggregates?: Readonly<Record<string, number>>;
 }
 
 export type DisplayItem = DataDisplayItem | GroupDisplayItem;
@@ -115,6 +128,8 @@ interface GroupNode {
   childMap: Map<string, GroupNode>;
   childList: GroupNode[];
   leaves: number[];
+  /** Raw totals while the tree is built; the display item stores the finalized copy. */
+  aggregates?: Record<string, number>;
 }
 
 function countLeaves(node: GroupNode): number {
@@ -131,6 +146,28 @@ function firstLeaf(node: GroupNode): number {
     if (leaf >= 0) return leaf;
   }
   return -1;
+}
+
+/**
+ * Each group sums its own leaves. A parent adds the raw child totals, so a
+ * collapsed group still includes every descendant. Source rows are not changed.
+ */
+function attachAggregates<TRow>(
+  nodes: readonly GroupNode[],
+  rows: readonly TRow[],
+  columns: readonly ResolvedColumn<TRow>[],
+): void {
+  if (columns.length === 0) return;
+  const visit = (node: GroupNode): Record<string, number> => {
+    const totals = createAggregateTotals(columns);
+    if (node.childList.length === 0) addRowsToTotals(totals, rows, node.leaves, columns);
+    else {
+      for (const child of node.childList) addAggregateTotals(totals, visit(child));
+    }
+    node.aggregates = finalizeAggregateTotals(totals);
+    return totals;
+  };
+  for (const node of nodes) visit(node);
 }
 
 export interface GroupBuildInput<TRow> {
@@ -217,6 +254,8 @@ export function buildGroupedItems<TRow>(input: GroupBuildInput<TRow>): GroupBuil
     }
   }
 
+  attachAggregates(roots, rows, aggregateColumns(input.columns));
+
   const items: DisplayItem[] = [];
   const visibleLeafIndexes: number[] = [];
   const walk = (nodes: readonly GroupNode[]) => {
@@ -231,6 +270,7 @@ export function buildGroupedItems<TRow>(input: GroupBuildInput<TRow>): GroupBuil
         count: countLeaves(node),
         expanded,
         sampleIndex: firstLeaf(node),
+        ...(node.aggregates ? { aggregates: node.aggregates } : {}),
       });
       if (!expanded) continue;
       if (node.childList.length > 0) walk(node.childList);

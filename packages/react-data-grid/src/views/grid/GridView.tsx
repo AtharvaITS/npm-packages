@@ -5,7 +5,7 @@ import { useGrid } from '../../state/GridContext';
 import { useElementSize } from '../../virtual/useElementSize';
 import { useMeasuredItemSize } from '../../virtual/useMeasuredItemSize';
 import { useVirtualRows } from '../../virtual/useVirtualRows';
-import { GroupSummary } from '../GroupSummary';
+import { GroupAggregateValues, GroupSummary } from '../GroupSummary';
 import { Card } from './Card';
 
 const GAP = 16;
@@ -363,6 +363,7 @@ function GridGroup({
       onClick={() => ctx.toggleGroup(item.key)}
     >
       <GroupSummary item={item} indent={false} />
+      <GroupAggregateValues item={item} />
     </div>
   );
 }

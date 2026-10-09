@@ -4,7 +4,7 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, row grouping, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, row grouping, group totals, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -17,17 +17,18 @@
 3. [Data, ids and columns](#data-ids-and-columns)
 4. [Sort, search and filter](#sort-search-and-filter)
 5. [Row grouping](#row-grouping)
-6. [Pagination and scrolling](#pagination-and-scrolling)
-7. [Server (host-managed) mode](#server-host-managed-mode)
-8. [Selection and activation](#selection-and-activation)
-9. [Column management and saved preferences](#column-management-and-saved-preferences)
-10. [Theming](#theming)
-11. [Localization and right-to-left](#localization-and-right-to-left)
-12. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
-13. [Accessibility](#accessibility)
-14. [Server-side rendering](#server-side-rendering)
-15. [Browser support](#browser-support)
-16. [Props reference](#props-reference)
+6. [Aggregation](#aggregation)
+7. [Pagination and scrolling](#pagination-and-scrolling)
+8. [Server (host-managed) mode](#server-host-managed-mode)
+9. [Selection and activation](#selection-and-activation)
+10. [Column management and saved preferences](#column-management-and-saved-preferences)
+11. [Theming](#theming)
+12. [Localization and right-to-left](#localization-and-right-to-left)
+13. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
+14. [Accessibility](#accessibility)
+15. [Server-side rendering](#server-side-rendering)
+16. [Browser support](#browser-support)
+17. [Props reference](#props-reference)
 
 ---
 
@@ -176,6 +177,7 @@ const columns = createColumns<Employee>([
 | `rowGroup` | Group rows by this column | `false` |
 | `rowGroupIndex` | Grouping level; a lower index is an outer group | display order |
 | `groupable` | Show Group / Ungroup in the column menu | `true` |
+| `aggregate` | `'sum'` totals this `number`, `currency`, or `percent` column on each group row | — |
 
 ---
 
@@ -258,6 +260,53 @@ USA
 - Server mode skips browser grouping, because the grid only holds the current page. A development warning is logged when a column sets `rowGroup`. Group on the host if the page should arrive already grouped.
 
 Messages: `groupByColumn`, `ungroupColumn`, `moveGroupUp`, `moveGroupDown`, `blankGroup`, `groupCount(count)`.
+
+Numeric totals on those group rows are covered in [Aggregation](#aggregation).
+
+---
+
+## Aggregation
+
+Sum a numeric column for each group. Set `aggregate: 'sum'` on a `number`, `currency`, or `percent` column. The column type can be inferred when the values are real numbers. Other types ignore `aggregate`. With no grouped columns, the grid stays flat and `aggregate` has no effect.
+
+```tsx
+const columns = createColumns<Employee>([
+  { field: 'department', rowGroup: true },
+  { field: 'employee' },
+  { field: 'salary', type: 'number', aggregate: 'sum' },
+]);
+
+const rows = [
+  { department: 'Sales', employee: 'John', salary: 40000 },
+  { department: 'Sales', employee: 'Sarah', salary: 50000 },
+  { department: 'IT', employee: 'David', salary: 60000 },
+  { department: 'IT', employee: 'Priya', salary: 70000 },
+];
+
+<ReactDataGrid data={rows} columns={columns} getRowId="employee" locale="en-US" />
+```
+
+That configuration renders:
+
+```
+▼ Sales (2)          90,000
+  John               40,000
+  Sarah              50,000
+▼ IT (2)            130,000
+  David              60,000
+  Priya              70,000
+```
+
+- The total is the sum of values in that group. A parent group sums every descendant, so nested groups each show their own total. Sales above is `40,000 + 50,000`, and a country group around both departments would show `220,000`.
+- Totals are calculated from the rows that remain after search and filters. Sorting does not change a sum. Changing the data, filters, search, or grouping recalculates the totals.
+- Expanding or collapsing a group does not change its total. The number on a collapsed group still includes the hidden rows. Pagination shows the full group total, including rows on other pages.
+- `null`, `undefined`, `''`, `NaN`, `Infinity`, and other non-numeric values are skipped. Integers and decimals are both summed (`10.1 + 20.2` is `30.3`). A `valueGetter` supplies the number when there is no `field`.
+- Totals stay on the group row. The source records are not modified.
+- In the table, each total sits in its own column, including when that column is pinned. A hidden column hides its total until the column is shown again. Currency and percent columns use the same `formatOptions` as the data cells. `format` is used for the total when it does not need a source row. `render` still applies only to data cells.
+- The card grid and list show the same totals on the group banner, labeled with the column header.
+- Several columns can set `aggregate: 'sum'`. Each column is summed on its own.
+- Aggregation is part of the column definition. It is not stored in column state or `persistStateKey`.
+- Server mode skips browser grouping, so it skips aggregation too. A development warning is logged when a column sets `aggregate`.
 
 ---
 

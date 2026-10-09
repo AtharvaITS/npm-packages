@@ -102,6 +102,22 @@ describe('resolveColumns', () => {
     expect(resolveColumns(undefined, twentyOne)[0]!.enumValues).toBeUndefined();
   });
 
+  it('keeps sum aggregation on numeric columns and ignores it on text', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cols = resolveColumns(
+      [
+        { field: 'salary', type: 'number', aggregate: 'sum' },
+        { field: 'price', type: 'currency', aggregate: 'sum' },
+        { field: 'rate', type: 'percent', aggregate: 'sum' },
+        { field: 'name', type: 'text', aggregate: 'sum' },
+      ],
+      [],
+      {},
+    );
+    expect(cols.map((column) => column.aggregate)).toEqual(['sum', 'sum', 'sum', undefined]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Column "name"'));
+  });
+
   it('keeps an explicit type and makes image columns unsearchable by default', () => {
     const [img, txt] = resolveColumns(
       [

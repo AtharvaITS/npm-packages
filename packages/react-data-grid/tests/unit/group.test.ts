@@ -257,4 +257,100 @@ describe('row grouping', () => {
     const cleared = setColumnRowGroup(applyColumnState(columns, removed).ordered, removed, 'country', false);
     expect(resolveGroupColumns(applyColumnState(columns, cleared).ordered)).toEqual([]);
   });
+
+  it('sums numeric columns for each group and its parents', () => {
+    const rows = [
+      { department: 'Sales', team: 'East', salary: 40000, bonus: 1000 },
+      { department: 'Sales', team: 'West', salary: 50000, bonus: 1500 },
+      { department: 'IT', team: 'East', salary: 60000, bonus: null },
+      { department: 'IT', team: 'East', salary: 70000, bonus: undefined },
+    ];
+    const defs: ColumnDef<Row>[] = [
+      { field: 'department', rowGroup: true, rowGroupIndex: 0 },
+      { field: 'team', rowGroup: true, rowGroupIndex: 1 },
+      { field: 'salary', type: 'number', aggregate: 'sum' },
+      { field: 'bonus', type: 'number', aggregate: 'sum' },
+    ];
+    const before = JSON.stringify(rows);
+    const result = grouped(rows, defs);
+    expect(JSON.stringify(rows)).toBe(before);
+
+    const totals = (key: string) => {
+      const item = result.items.find((candidate) => candidate.kind === 'group' && candidate.key === key);
+      return item && item.kind === 'group' ? item.aggregates : undefined;
+    };
+    expect(totals('department=s:Sales')).toEqual({ salary: 90000, bonus: 2500 });
+    expect(totals('department=s:Sales\u001fteam=s:East')).toEqual({ salary: 40000, bonus: 1000 });
+    expect(totals('department=s:Sales\u001fteam=s:West')).toEqual({ salary: 50000, bonus: 1500 });
+    expect(totals('department=s:IT')).toEqual({ salary: 130000, bonus: 0 });
+    expect(totals('department=s:IT\u001fteam=s:East')).toEqual({ salary: 130000, bonus: 0 });
+  });
+
+  it('keeps the full sum when a group is collapsed, filtered, or sorted', () => {
+    const rows = [
+      { department: 'Sales', name: 'John', salary: 10.1, active: true },
+      { department: 'Sales', name: 'Sarah', salary: 20.2, active: true },
+      { department: 'IT', name: 'David', salary: 5, active: false },
+    ];
+    const defs: ColumnDef<Row>[] = [
+      { field: 'department', rowGroup: true },
+      { field: 'name' },
+      { field: 'salary', aggregate: 'sum' },
+    ];
+    const collapsed = grouped(rows, defs, { collapsed: ['department=s:Sales'] });
+    const sales = collapsed.items.find((item) => item.kind === 'group' && item.key === 'department=s:Sales');
+    expect(sales && sales.kind === 'group' && sales.aggregates).toEqual({ salary: 30.3 });
+    expect(collapsed.items.some((item) => item.kind === 'data' && rows[item.index]?.name === 'John')).toBe(false);
+
+    const active = rows.map((row, index) => (row.active ? index : -1)).filter((index) => index >= 0);
+    const filtered = grouped(rows, defs, { indexes: active });
+    const filteredSales = filtered.items.find((item) => item.kind === 'group' && item.key === 'department=s:Sales');
+    expect(filteredSales && filteredSales.kind === 'group' && filteredSales.aggregates).toEqual({ salary: 30.3 });
+    expect(filtered.items.some((item) => item.kind === 'group' && item.key === 'department=s:IT')).toBe(false);
+
+    const sorted = grouped(rows, defs, { sort: [{ columnId: 'salary', direction: 'desc' }] });
+    const sortedSales = sorted.items.find((item) => item.kind === 'group' && item.key === 'department=s:Sales');
+    expect(sortedSales && sortedSales.kind === 'group' && sortedSales.aggregates).toEqual({ salary: 30.3 });
+  });
+
+  it('skips null, missing, and invalid numbers and does not throw', () => {
+    const rows = [
+      { department: 'Sales', salary: 10 },
+      { department: 'Sales', salary: null },
+      { department: 'Sales', salary: undefined },
+      { department: 'Sales', salary: '' },
+      { department: 'Sales', salary: 'nope' },
+      { department: 'Sales', salary: Number.NaN },
+      { department: 'Sales', salary: Number.POSITIVE_INFINITY },
+      { department: 'Sales', salary: '5.5' },
+      { department: 'Sales', salary: 4.5 },
+    ];
+    const defs: ColumnDef<Row>[] = [
+      { field: 'department', rowGroup: true },
+      { field: 'salary', type: 'number', aggregate: 'sum' },
+    ];
+    Object.freeze(rows);
+    for (const row of rows) Object.freeze(row);
+    const result = grouped(rows, defs);
+    const sales = result.items.find((item) => item.kind === 'group' && item.key === 'department=s:Sales');
+    expect(sales && sales.kind === 'group' && sales.aggregates).toEqual({ salary: 20 });
+  });
+
+  it('sums a valueGetter and leaves groups unchanged when aggregation is off', () => {
+    const rows = [
+      { department: 'Sales', pay: 1 },
+      { department: 'Sales', pay: 2 },
+    ];
+    const summed = grouped(rows, [
+      { field: 'department', rowGroup: true },
+      { id: 'pay', type: 'number', aggregate: 'sum', valueGetter: (row) => row.pay },
+    ]);
+    const sales = summed.items.find((item) => item.kind === 'group' && item.key === 'department=s:Sales');
+    expect(sales && sales.kind === 'group' && sales.aggregates).toEqual({ pay: 3 });
+
+    const plain = grouped(rows, [{ field: 'department', rowGroup: true }, { field: 'pay', type: 'number' }]);
+    expect(
+      plain.items.every((item) => item.kind !== 'group' || item.aggregates === undefined),
+    ).toBe(true);
+  });
 });

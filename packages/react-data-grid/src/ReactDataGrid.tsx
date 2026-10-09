@@ -176,6 +176,12 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
       'Row grouping runs in the browser, so it is skipped when dataMode="server".',
     );
   }
+  if (serverMode && effective.ordered.some((column) => column.aggregate === 'sum')) {
+    warn(
+      warnKey,
+      'Aggregation runs with row grouping in the browser, so it is skipped when dataMode="server".',
+    );
+  }
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
   const toggleGroup = useCallback((key: string) => {
     setCollapsedGroups((current) => {

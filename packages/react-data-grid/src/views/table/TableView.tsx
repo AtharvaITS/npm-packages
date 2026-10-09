@@ -260,6 +260,8 @@ export function TableView() {
             hasSelect={hasSelect}
             selectStyle={layout.selectStyle}
             activeCol={activeCol}
+            columns={visibleColumns}
+            cellStyles={layout.styles}
           />
         );
       case 'data':

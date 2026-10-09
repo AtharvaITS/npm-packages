@@ -51,6 +51,9 @@ export interface FilterCondition {
 
 export type SelectionMode = 'none' | 'single' | 'multi';
 
+/** Reduction shown on a group row. Only numeric columns (`number`, `currency`, `percent`) are aggregated. */
+export type AggregateFunc = 'sum';
+
 export interface ColumnStateItem {
   id: string;
   width?: number;
@@ -267,6 +270,12 @@ export interface ColumnDef<TRow = Record<string, unknown>> {
   rowGroupIndex?: number;
   /** When false, the column menu cannot group by this column. Defaults to true. */
   groupable?: boolean;
+  /**
+   * Total to show on each group row. `sum` adds the column's numeric values.
+   * Ignored unless the column type is `number`, `currency`, or `percent`.
+   * Totals are display-only and are not written onto the source rows.
+   */
+  aggregate?: AggregateFunc;
 }
 
 export interface StateContentContext {

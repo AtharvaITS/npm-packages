@@ -22,6 +22,8 @@ export interface ResolvedColumn<TRow = any> extends ColumnDef<TRow> {
   hideable: boolean;
   rowGroup: boolean;
   groupable: boolean;
+  /** Set only for `number`, `currency`, and `percent` columns that opt in. */
+  aggregate?: 'sum';
   /** The column definition as supplied (or derived), for render contexts. */
   def: ColumnDef<TRow>;
 }
@@ -160,6 +162,12 @@ export function resolveColumns<TRow>(
     const maxWidth = Math.max(minWidth, def.maxWidth ?? DEFAULT_MAX_WIDTH);
     const width = def.width !== undefined ? clamp(def.width, minWidth, maxWidth) : undefined;
     const numeric = type === 'number' || type === 'currency' || type === 'percent';
+    if (def.aggregate === 'sum' && !numeric) {
+      warn(
+        warnKey,
+        `Column "${id}" sets aggregate to "sum", but only number, currency, and percent columns can be aggregated.`,
+      );
+    }
     const enumValues =
       def.enumValues ??
       (type === 'text' || type === 'enum' ? collectEnumValues(rows, def) : undefined);
@@ -184,6 +192,7 @@ export function resolveColumns<TRow>(
       hideable: def.hideable ?? true,
       rowGroup: def.rowGroup ?? false,
       groupable: def.groupable ?? true,
+      aggregate: def.aggregate === 'sum' && numeric ? 'sum' : undefined,
       enumValues,
     });
   }
