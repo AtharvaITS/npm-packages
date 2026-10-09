@@ -57,6 +57,10 @@ export interface ColumnStateItem {
   hidden?: boolean;
   pinned?: 'start' | 'end' | null;
   order: number;
+  /** When set, overrides the column definition's `rowGroup`. */
+  rowGroup?: boolean;
+  /** 0-based grouping level. Lower indexes are outer groups. */
+  rowGroupIndex?: number;
 }
 
 export interface GridState {
@@ -172,6 +176,16 @@ export interface Messages {
   clearSelection: string;
   pageStatus: (page: number, pageCount: number) => string;
   resizeColumn: string;
+  groupByColumn: string;
+  ungroupColumn: string;
+  moveGroupUp: string;
+  moveGroupDown: string;
+  /** Label for a group whose value is null, undefined, or empty. */
+  blankGroup: string;
+  groupCount: (count: number) => string;
+  rowGroupPanelLabel: string;
+  rowGroupDropHint: string;
+  removeRowGroup: (header: string) => string;
 }
 
 export interface CellContext<TRow = Record<string, unknown>> {
@@ -244,6 +258,15 @@ export interface ColumnDef<TRow = Record<string, unknown>> {
   resizable?: boolean;
   reorderable?: boolean;
   hideable?: boolean;
+  /**
+   * Group rows by this column. Order is `rowGroupIndex` (lower is outer),
+   * then the column's display order when the index is omitted.
+   */
+  rowGroup?: boolean;
+  /** 0-based grouping level. Lower indexes are outer groups. */
+  rowGroupIndex?: number;
+  /** When false, the column menu cannot group by this column. Defaults to true. */
+  groupable?: boolean;
 }
 
 export interface StateContentContext {
@@ -329,6 +352,11 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   enableColumnReorder?: boolean;
   enableColumnHide?: boolean;
   enableColumnPin?: boolean;
+  /**
+   * Shows Group / Ungroup in the column menu so grouping can change at runtime.
+   * Columns with `rowGroup` still group when this is omitted.
+   */
+  enableRowGrouping?: boolean;
   persistStateKey?: string;
   onStateChange?: (state: GridState, changed: keyof GridState) => void;
 

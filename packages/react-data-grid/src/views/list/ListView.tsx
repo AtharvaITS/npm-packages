@@ -1,18 +1,20 @@
 import { useMemo, useRef, type CSSProperties } from 'react';
-import { useRovingFocus } from '../../a11y/useRovingFocus';
+import { POS_COL, POS_ROW, useRovingFocus } from '../../a11y/useRovingFocus';
+import type { DisplayItem, GroupDisplayItem } from '../../core/group';
 import { useGrid } from '../../state/GridContext';
 import { useMeasuredItemSize } from '../../virtual/useMeasuredItemSize';
 import { useVirtualRows } from '../../virtual/useVirtualRows';
+import { GroupSummary } from '../GroupSummary';
 import { ListItem } from './ListItem';
 
 /** List view: stacked items; `list` semantics, or `listbox` when selection is on. */
 export function ListView() {
   const ctx = useGrid();
-  const { displayIndexes, visibleColumns, titleColumn, subtitleColumn, imageColumn, selection } =
+  const { displayItems, visibleColumns, titleColumn, subtitleColumn, imageColumn, selection } =
     ctx;
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = ctx.pagination === 'scroll';
-  const count = displayIndexes.length;
+  const count = displayItems.length;
   const hasSelect = selection.mode !== 'none';
 
   const fieldColumns = useMemo(
@@ -39,13 +41,36 @@ export function ListView() {
     pageRows: Math.max(1, Math.floor((scrollRef.current?.clientHeight ?? 600) / itemSize)),
     onEnsureVisible: (row) => scroll && virtual.scrollToIndex(row),
     onActivate: (pos, event) => {
-      const rowIndex = displayIndexes[pos.row];
-      if (rowIndex !== undefined) ctx.activateRow(rowIndex, event);
+      const item = displayItems[pos.row];
+      if (!item) return;
+      switch (item.kind) {
+        case 'group':
+          ctx.toggleGroup(item.key);
+          return;
+        case 'data':
+          ctx.activateRow(item.index, event);
+          return;
+        default: {
+          const _exhaustive: never = item;
+          return _exhaustive;
+        }
+      }
     },
     onToggle: (pos, event) => {
-      const rowIndex = displayIndexes[pos.row];
-      if (rowIndex !== undefined && hasSelect)
-        selection.toggleRow(rowIndex, { range: event.shiftKey });
+      const item = displayItems[pos.row];
+      if (!item) return;
+      switch (item.kind) {
+        case 'group':
+          ctx.toggleGroup(item.key);
+          return;
+        case 'data':
+          if (hasSelect) selection.toggleRow(item.index, { range: event.shiftKey });
+          return;
+        default: {
+          const _exhaustive: never = item;
+          return _exhaustive;
+        }
+      }
     },
     onKey: (_pos, event) => {
       if (
@@ -67,19 +92,41 @@ export function ListView() {
 
   const items = [];
   for (let p = start; p < end; p++) {
-    const rowIndex = displayIndexes[p]!;
+    const item = displayItems[p]!;
     const tabbable = roving.active.row === p || (!activeRendered && p === start);
     items.push(
-      <ListItem
-        key={ctx.rowIds[rowIndex]}
-        rowIndex={rowIndex}
-        fieldColumns={fieldColumns}
-        focusRow={p}
-        tabbable={tabbable}
-        position={ctx.rowOffset + p + 1}
-        setSize={ctx.totalCount}
-      />,
+      renderListEntry(item, p, tabbable),
     );
+  }
+
+  function renderListEntry(item: DisplayItem, position: number, tabbable: boolean) {
+    switch (item.kind) {
+      case 'group':
+        return (
+          <ListGroup
+            key={`group:${item.key}`}
+            item={item}
+            focusRow={position}
+            tabbable={tabbable}
+          />
+        );
+      case 'data':
+        return (
+          <ListItem
+            key={ctx.rowIds[item.index] ?? position}
+            rowIndex={item.index}
+            fieldColumns={fieldColumns}
+            focusRow={position}
+            tabbable={tabbable}
+            position={ctx.rowOffset + position + 1}
+            setSize={ctx.displayTotal}
+          />
+        );
+      default: {
+        const _exhaustive: never = item;
+        return _exhaustive;
+      }
+    }
   }
 
   const style: CSSProperties = scroll ? { height: ctx.scrollHeight ?? 600 } : {};
@@ -111,6 +158,32 @@ export function ListView() {
       >
         {items}
       </div>
+    </div>
+  );
+}
+
+function ListGroup({
+  item,
+  focusRow,
+  tabbable,
+}: {
+  item: GroupDisplayItem;
+  focusRow: number;
+  tabbable: boolean;
+}) {
+  const ctx = useGrid();
+  return (
+    <div
+      role="presentation"
+      className="aits-list-item aits-group-banner"
+      data-group="true"
+      data-group-key={item.key}
+      aria-expanded={item.expanded}
+      style={{ paddingInlineStart: `calc(0.875rem + ${item.depth * 16}px)` }}
+      {...{ [POS_ROW]: focusRow, [POS_COL]: 0, tabIndex: tabbable ? 0 : -1 }}
+      onClick={() => ctx.toggleGroup(item.key)}
+    >
+      <GroupSummary item={item} indent={false} />
     </div>
   );
 }

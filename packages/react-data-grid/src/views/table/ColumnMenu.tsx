@@ -85,6 +85,36 @@ export function ColumnMenu({
       onSelect: () => actions.setHidden(column.id, true),
     });
   }
+  if (actions.canGroup && column.groupable) {
+    if (items.length) items.push('separator');
+    if (column.rowGroup) {
+      const levels = ctx.columns
+        .filter((candidate) => candidate.rowGroup)
+        .sort((a, b) => (a.rowGroupIndex ?? 0) - (b.rowGroupIndex ?? 0));
+      const index = levels.findIndex((candidate) => candidate.id === column.id);
+      items.push(
+        {
+          label: messages.ungroupColumn,
+          onSelect: () => actions.setRowGroup(column.id, false),
+        },
+        {
+          label: messages.moveGroupUp,
+          disabled: index <= 0,
+          onSelect: () => actions.moveGroup(column.id, -1),
+        },
+        {
+          label: messages.moveGroupDown,
+          disabled: index < 0 || index >= levels.length - 1,
+          onSelect: () => actions.moveGroup(column.id, 1),
+        },
+      );
+    } else {
+      items.push({
+        label: messages.groupByColumn,
+        onSelect: () => actions.setRowGroup(column.id, true),
+      });
+    }
+  }
 
   if (items.length === 0) return null;
   return (
@@ -110,6 +140,7 @@ export function hasColumnMenu(column: EffectiveColumn, ctx: ReturnType<typeof us
     column.sortable ||
     a.canPin ||
     (a.canReorder && column.reorderable) ||
-    (a.canHide && column.hideable)
+    (a.canHide && column.hideable) ||
+    (a.canGroup && column.groupable)
   );
 }

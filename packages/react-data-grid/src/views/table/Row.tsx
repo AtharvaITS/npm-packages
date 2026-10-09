@@ -16,6 +16,8 @@ export interface RowProps {
   selectStyle?: CSSProperties;
   /** Column (roving index) that holds the tab stop in this row, or -1. */
   activeCol: number;
+  /** Group nesting. 0 leaves the row layout unchanged. */
+  depth?: number;
 }
 
 /** Memoized so scrolling re-renders only rows that enter the window. */
@@ -27,6 +29,7 @@ export const Row = memo(function Row({
   cellStyles,
   selectStyle,
   activeCol,
+  depth = 0,
 }: RowProps) {
   const itemProps = (col: number) => ({
     [POS_ROW]: focusRow,
@@ -63,6 +66,12 @@ export const Row = memo(function Row({
       aria-disabled={hasSelect && !selectable ? true : undefined}
       data-selected={selected || undefined}
       data-row-id={id}
+      data-depth={depth > 0 ? depth : undefined}
+      style={
+        depth > 0
+          ? ({ '--aits-group-indent': `${depth * 16}px` } as CSSProperties)
+          : undefined
+      }
       onClick={onClick}
     >
       {hasSelect && (

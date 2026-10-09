@@ -20,6 +20,8 @@ export interface ResolvedColumn<TRow = any> extends ColumnDef<TRow> {
   resizable: boolean;
   reorderable: boolean;
   hideable: boolean;
+  rowGroup: boolean;
+  groupable: boolean;
   /** The column definition as supplied (or derived), for render contexts. */
   def: ColumnDef<TRow>;
 }
@@ -180,6 +182,8 @@ export function resolveColumns<TRow>(
       resizable: def.resizable ?? true,
       reorderable: def.reorderable ?? true,
       hideable: def.hideable ?? true,
+      rowGroup: def.rowGroup ?? false,
+      groupable: def.groupable ?? true,
       enumValues,
     });
   }

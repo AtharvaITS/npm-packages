@@ -3,6 +3,7 @@ import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
 import { MoreIcon, SortAscIcon, SortDescIcon, SortNoneIcon } from '../icons';
 import { ColumnMenu, hasColumnMenu } from './ColumnMenu';
+import { COLUMN_DRAG_MIME } from './useColumnReorder';
 
 export interface HeaderCellProps {
   column: EffectiveColumn;
@@ -49,6 +50,18 @@ export function HeaderCell({
     : undefined;
   const showMenu = hasColumnMenu(column, ctx);
   const multi = ctx.api.state.sort.length > 1;
+  const groupDrag = ctx.columnActions.canGroup && column.groupable;
+  const onDragStart = (event: DragEvent) => {
+    dragProps.onDragStart?.(event);
+    if (!groupDrag) return;
+    event.dataTransfer.effectAllowed = 'move';
+    try {
+      event.dataTransfer.setData(COLUMN_DRAG_MIME, column.id);
+      event.dataTransfer.setData('text/plain', column.id);
+    } catch {
+      // some environments restrict dataTransfer
+    }
+  };
 
   const label = <span className="aits-header-label">{column.header}</span>;
   return (
@@ -66,6 +79,8 @@ export function HeaderCell({
       style={style}
       {...itemProps}
       {...dragProps}
+      draggable={dragProps.draggable || groupDrag ? true : undefined}
+      onDragStart={dragProps.onDragStart || groupDrag ? onDragStart : undefined}
     >
       {column.sortable ? (
         <button

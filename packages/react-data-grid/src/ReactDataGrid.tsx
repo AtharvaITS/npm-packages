@@ -12,15 +12,19 @@ import { LiveRegion, useAnnouncer } from './a11y/LiveRegion';
 import {
   applyColumnState,
   moveColumn,
+  moveRowGroup,
   neighbourId,
+  placeRowGroup,
   setColumnHidden,
   setColumnPinned,
+  setColumnRowGroup,
   setColumnWidth,
   type EffectiveColumn,
 } from './core/columnState';
 import { getColumnValue, resolveColumns } from './core/columns';
 import { canEditColumn, parseEditedValue } from './core/editValue';
 import { isConditionActive } from './core/filter';
+import { buildGroupedItems, resolveGroupColumns } from './core/group';
 import { normalizeData, resolveRowIds } from './core/normalize';
 import { clampPage, pageRange, pageSlice } from './core/paginate';
 import { runPipeline } from './core/pipeline';
@@ -48,6 +52,7 @@ import { EmptyState } from './states/EmptyState';
 import { ErrorState } from './states/ErrorState';
 import { LoadingOverlay } from './states/LoadingOverlay';
 import { NoResultsState } from './states/NoResultsState';
+import { RowGroupPanel } from './toolbar/RowGroupPanel';
 import { Toolbar } from './toolbar/Toolbar';
 import type { ReactDataGridProps, Density, RowId, ThemeToken } from './types';
 import { GridView } from './views/grid/GridView';
@@ -144,7 +149,7 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     [searchKey, resolved],
   );
 
-  // ---- Pipeline: search → filter → sort (client mode) ----------------------
+  // ---- Pipeline: search → filter → sort, then group (client mode) -----------
   const pipeline = useMemo(() => {
     if (serverMode) {
       const indexes = rows.map((_, i) => i);
@@ -161,6 +166,48 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     });
   }, [serverMode, rows, resolved, searchColumns, state.search, state.filters, state.sort, locale]);
 
+  const groupColumns = useMemo(
+    () => (serverMode ? [] : resolveGroupColumns(effective.ordered)),
+    [serverMode, effective.ordered],
+  );
+  if (serverMode && effective.ordered.some((column) => column.rowGroup)) {
+    warn(
+      warnKey,
+      'Row grouping runs in the browser, so it is skipped when dataMode="server".',
+    );
+  }
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleGroup = useCallback((key: string) => {
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+  const grouped = useMemo(() => {
+    if (groupColumns.length === 0) return null;
+    return buildGroupedItems({
+      rows,
+      indexes: pipeline.indexes,
+      groupColumns,
+      sort: state.sort,
+      columns: effective.ordered,
+      locale,
+      collapsed: collapsedGroups,
+    });
+  }, [groupColumns, rows, pipeline.indexes, state.sort, effective.ordered, locale, collapsedGroups]);
+
+  const groupSignature = groupColumns
+    .map((column) => `${column.id}:${column.rowGroupIndex ?? ''}`)
+    .join('\u0001');
+  const groupSignatureRef = useRef(groupSignature);
+  useEffect(() => {
+    if (groupSignatureRef.current === groupSignature) return;
+    groupSignatureRef.current = groupSignature;
+    api.setPage(0);
+  }, [groupSignature, api]);
+
   const pagination: 'pages' | 'scroll' = serverMode ? 'pages' : (props.pagination ?? 'pages');
   if (serverMode && props.pagination === 'scroll') {
     warn(warnKey, 'pagination="scroll" is not supported with dataMode="server"; using pages.');
@@ -172,8 +219,9 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   const totalCount = serverMode
     ? Math.max(server.totalCount ?? rows.length, rows.length)
     : pipeline.matchCount;
+  const displayTotal = grouped ? grouped.items.length : totalCount;
   const dataCount = serverMode ? totalCount : rows.length;
-  const page = pagination === 'pages' ? clampPage(state.page, totalCount, state.pageSize) : 0;
+  const page = pagination === 'pages' ? clampPage(state.page, displayTotal, state.pageSize) : 0;
 
   // Keep the stored page valid when data or filters shrink (US4 scenario 3).
   const serverLoading = serverMode && server.loading;
@@ -182,10 +230,33 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     if (page !== state.page) api.setPage(page);
   }, [page, state.page, pagination, serverLoading, api]);
 
-  const displayIndexes = useMemo(() => {
-    if (serverMode || pagination === 'scroll') return pipeline.indexes;
-    return pageSlice(pipeline.indexes, page, state.pageSize);
-  }, [serverMode, pagination, pipeline.indexes, page, state.pageSize]);
+  const displayItems = useMemo(() => {
+    if (grouped) {
+      if (pagination === 'scroll') return grouped.items;
+      return pageSlice(grouped.items, page, state.pageSize);
+    }
+    const indexes =
+      serverMode || pagination === 'scroll'
+        ? pipeline.indexes
+        : pageSlice(pipeline.indexes, page, state.pageSize);
+    return indexes.map((index) => ({ kind: 'data' as const, index, depth: 0 }));
+  }, [grouped, serverMode, pagination, pipeline.indexes, page, state.pageSize]);
+  const displayIndexes = useMemo(
+    () =>
+      displayItems.flatMap((item) => {
+        switch (item.kind) {
+          case 'data':
+            return [item.index];
+          case 'group':
+            return [];
+          default: {
+            const _exhaustive: never = item;
+            return _exhaustive;
+          }
+        }
+      }),
+    [displayItems],
+  );
   const rowOffset = pagination === 'pages' ? page * state.pageSize : 0;
 
   // ---- Selection -----------------------------------------------------------
@@ -202,10 +273,10 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     },
     [isRowSelectable, rows],
   );
-  const orderedIds = useMemo(
-    () => pipeline.indexes.map((i) => rowIds[i]!),
-    [pipeline.indexes, rowIds],
-  );
+  const orderedIds = useMemo(() => {
+    const indexes = grouped ? grouped.visibleLeafIndexes : pipeline.indexes;
+    return indexes.map((i) => rowIds[i]!);
+  }, [grouped, pipeline.indexes, rowIds]);
   const selectableIds = useMemo(
     () =>
       mode === 'none' ? EMPTY_IDS : pipeline.indexes.filter(isSelectable).map((i) => rowIds[i]!),
@@ -305,6 +376,7 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
       canReorder: props.enableColumnReorder !== false,
       canHide: props.enableColumnHide !== false,
       canPin: props.enableColumnPin !== false,
+      canGroup: props.enableRowGrouping === true,
       setWidth: (id, width) => setColumnState(setColumnWidth(ordered, current, id, width)),
       setHidden: (id, hidden) => {
         const next = setColumnHidden(ordered, current, id, hidden);
@@ -318,6 +390,11 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
         const target = neighbourId(effective.visible, id, delta);
         if (target) setColumnState(moveColumn(ordered, current, id, target));
       },
+      setRowGroup: (id, rowGroup) =>
+        setColumnState(setColumnRowGroup(ordered, current, id, rowGroup)),
+      moveGroup: (id, delta) => setColumnState(moveRowGroup(ordered, current, id, delta)),
+      placeRowGroup: (id, beforeId) =>
+        setColumnState(placeRowGroup(ordered, current, id, beforeId)),
     };
   }, [
     effective,
@@ -327,6 +404,7 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     props.enableColumnReorder,
     props.enableColumnHide,
     props.enableColumnPin,
+    props.enableRowGrouping,
   ]);
 
   // ---- Card / list layout columns ------------------------------------------
@@ -385,11 +463,11 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     if (last.announceKey !== announceKey) {
       announce(messages.resultsCount(totalCount));
     } else if (last.pageKey !== pageKey) {
-      const range = pageRange(page, state.pageSize, totalCount);
-      announce(messages.pageRange(range.from, range.to, totalCount));
+      const range = pageRange(page, state.pageSize, displayTotal);
+      announce(messages.pageRange(range.from, range.to, displayTotal));
     }
     lastAnnounce.current = { announceKey, pageKey };
-  }, [announceKey, pageKey, announce, messages, totalCount, page, state.pageSize]);
+  }, [announceKey, pageKey, announce, messages, totalCount, displayTotal, page, state.pageSize]);
 
   const onRowActivate = props.onRowActivate;
   const activateRow = useCallback(
@@ -473,8 +551,12 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     serverMode,
     pagination,
     displayIndexes,
+    displayItems,
+    grouping: grouped !== null,
+    toggleGroup,
     rowOffset,
     totalCount,
+    displayTotal,
     dataCount,
     selection,
     columnActions,
@@ -503,14 +585,14 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   let content;
   if (loading && !hasRows) content = <LoadingOverlay skeleton />;
   else if (dataCount === 0 && !conditionsActive) content = <EmptyState />;
-  else if (totalCount === 0 || displayIndexes.length === 0)
+  else if (totalCount === 0 || displayItems.length === 0)
     content = hasRows || serverMode ? <NoResultsState /> : <EmptyState />;
   else if (state.view === 'grid') content = <GridView />;
   else if (state.view === 'list') content = <ListView />;
   else content = <TableView />;
 
   const showToolbar = serverMode || rows.length > 0;
-  const showPagination = pagination === 'pages' && totalCount > 0;
+  const showPagination = pagination === 'pages' && displayTotal > 0;
 
   return (
     <div
@@ -525,6 +607,7 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     >
       <GridContext.Provider value={ctx as GridContextValue}>
         {showToolbar && <Toolbar />}
+        <RowGroupPanel />
         {error !== undefined && error !== null && error !== false && (
           <ErrorState error={error} retry={server.retry} />
         )}

@@ -39,10 +39,15 @@ export function applyColumnState<TRow>(
     const item = byId.get(column.id);
     const width = item?.width ?? column.width;
     const pinned = item && item.pinned !== undefined ? item.pinned : column.pinned;
+    const rowGroup = item && item.rowGroup !== undefined ? item.rowGroup : column.rowGroup;
+    const rowGroupIndex =
+      item && item.rowGroupIndex !== undefined ? item.rowGroupIndex : column.rowGroupIndex;
     const effective: EffectiveColumn<TRow> = {
       ...column,
       hidden: item?.hidden ?? column.hidden,
       pinned: pinned ?? null,
+      rowGroup,
+      rowGroupIndex: rowGroup ? rowGroupIndex : undefined,
       width,
       layoutWidth: clamp(width ?? DEFAULT_WIDTHS[column.type], column.minWidth, column.maxWidth),
       fixedWidth: width !== undefined,
@@ -77,8 +82,15 @@ export function snapshotState(
   const byId = new Map(state.map((s) => [s.id, s]));
   return ordered.map((c, order) => {
     const prev = byId.get(c.id);
-    const item: ColumnStateItem = { id: c.id, order, hidden: c.hidden, pinned: c.pinned };
+    const item: ColumnStateItem = {
+      id: c.id,
+      order,
+      hidden: c.hidden,
+      pinned: c.pinned,
+      rowGroup: c.rowGroup,
+    };
     if (prev?.width !== undefined) item.width = prev.width;
+    if (c.rowGroup && c.rowGroupIndex !== undefined) item.rowGroupIndex = c.rowGroupIndex;
     return item;
   });
 }
@@ -136,6 +148,100 @@ export function moveColumn(
   // Moving into another pin group adopts that group.
   snap.splice(to, 0, { ...item!, pinned: target.pinned });
   return snap.map((s, order) => ({ ...s, order }));
+}
+
+/** Writes dense 0-based `rowGroupIndex` values in current grouping order. */
+function compactGroupIndexes(items: readonly ColumnStateItem[]): ColumnStateItem[] {
+  const grouped = items
+    .filter((item) => item.rowGroup)
+    .sort((a, b) => {
+      const ia = a.rowGroupIndex ?? Number.MAX_SAFE_INTEGER;
+      const ib = b.rowGroupIndex ?? Number.MAX_SAFE_INTEGER;
+      if (ia !== ib) return ia - ib;
+      return a.order - b.order;
+    });
+  const indexOf = new Map(grouped.map((item, index) => [item.id, index]));
+  return items.map((item) => {
+    if (!item.rowGroup) {
+      if (item.rowGroupIndex === undefined) return { ...item, rowGroup: false };
+      const { rowGroupIndex: _dropped, ...rest } = item;
+      return { ...rest, rowGroup: false };
+    }
+    return { ...item, rowGroup: true, rowGroupIndex: indexOf.get(item.id) ?? 0 };
+  });
+}
+
+/** Adds or removes a column from row grouping. New groups are appended. */
+export function setColumnRowGroup(
+  ordered: readonly EffectiveColumn[],
+  state: readonly ColumnStateItem[],
+  id: string,
+  rowGroup: boolean,
+): ColumnStateItem[] {
+  if (!ordered.some((column) => column.id === id)) return [...state];
+  const snap = snapshotState(ordered, state).map((item) => {
+    if (item.id !== id) return item;
+    if (!rowGroup) {
+      const { rowGroupIndex: _dropped, ...rest } = item;
+      return { ...rest, rowGroup: false };
+    }
+    return { ...item, rowGroup: true };
+  });
+  return compactGroupIndexes(snap);
+}
+
+/**
+ * Drops a column into the grouping order.
+ * `beforeId` inserts before that grouped column; `null` appends.
+ */
+export function placeRowGroup(
+  ordered: readonly EffectiveColumn[],
+  state: readonly ColumnStateItem[],
+  id: string,
+  beforeId: string | null,
+): ColumnStateItem[] {
+  const column = ordered.find((item) => item.id === id);
+  if (!column || !column.groupable || beforeId === id) return [...state];
+  const snap = compactGroupIndexes(snapshotState(ordered, state));
+  const ids = snap
+    .filter((item) => item.rowGroup && item.id !== id)
+    .sort((a, b) => (a.rowGroupIndex ?? 0) - (b.rowGroupIndex ?? 0))
+    .map((item) => item.id);
+  let index = ids.length;
+  if (beforeId && beforeId !== id) {
+    const at = ids.indexOf(beforeId);
+    index = at === -1 ? ids.length : at;
+  }
+  ids.splice(index, 0, id);
+  const indexOf = new Map(ids.map((groupId, position) => [groupId, position]));
+  return snap.map((item) =>
+    indexOf.has(item.id)
+      ? { ...item, rowGroup: true, rowGroupIndex: indexOf.get(item.id) }
+      : item,
+  );
+}
+
+/** Moves a grouped column earlier (`-1`) or later (`1`) in the grouping order. */
+export function moveRowGroup(
+  ordered: readonly EffectiveColumn[],
+  state: readonly ColumnStateItem[],
+  id: string,
+  delta: -1 | 1,
+): ColumnStateItem[] {
+  const snap = compactGroupIndexes(snapshotState(ordered, state));
+  const grouped = snap
+    .filter((item) => item.rowGroup)
+    .sort((a, b) => (a.rowGroupIndex ?? 0) - (b.rowGroupIndex ?? 0));
+  const index = grouped.findIndex((item) => item.id === id);
+  const target = index + delta;
+  if (index < 0 || target < 0 || target >= grouped.length) return snap;
+  const next = grouped.slice();
+  const [moved] = next.splice(index, 1);
+  next.splice(target, 0, moved!);
+  const indexOf = new Map(next.map((item, position) => [item.id, position]));
+  return snap.map((item) =>
+    item.rowGroup ? { ...item, rowGroupIndex: indexOf.get(item.id) ?? item.rowGroupIndex } : item,
+  );
 }
 
 /** Neighbour in visible display order, for "Move left/right". */

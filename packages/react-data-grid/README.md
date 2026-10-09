@@ -4,7 +4,7 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, row grouping, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -16,17 +16,18 @@
 2. [Views](#views)
 3. [Data, ids and columns](#data-ids-and-columns)
 4. [Sort, search and filter](#sort-search-and-filter)
-5. [Pagination and scrolling](#pagination-and-scrolling)
-6. [Server (host-managed) mode](#server-host-managed-mode)
-7. [Selection and activation](#selection-and-activation)
-8. [Column management and saved preferences](#column-management-and-saved-preferences)
-9. [Theming](#theming)
-10. [Localization and right-to-left](#localization-and-right-to-left)
-11. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
-12. [Accessibility](#accessibility)
-13. [Server-side rendering](#server-side-rendering)
-14. [Browser support](#browser-support)
-15. [Props reference](#props-reference)
+5. [Row grouping](#row-grouping)
+6. [Pagination and scrolling](#pagination-and-scrolling)
+7. [Server (host-managed) mode](#server-host-managed-mode)
+8. [Selection and activation](#selection-and-activation)
+9. [Column management and saved preferences](#column-management-and-saved-preferences)
+10. [Theming](#theming)
+11. [Localization and right-to-left](#localization-and-right-to-left)
+12. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
+13. [Accessibility](#accessibility)
+14. [Server-side rendering](#server-side-rendering)
+15. [Browser support](#browser-support)
+16. [Props reference](#props-reference)
 
 ---
 
@@ -172,6 +173,9 @@ const columns = createColumns<Employee>([
 | `align` | `start`, `center`, `end` | `end` for numeric types |
 | `hidden`, `pinned` | Initial visibility; `'start'`, `'end'` or `null` | `false`, `null` |
 | `sortable`, `filterable`, `searchable`, `resizable`, `reorderable`, `hideable` | Per-column switches | `true` (images aren't searchable) |
+| `rowGroup` | Group rows by this column | `false` |
+| `rowGroupIndex` | Grouping level; a lower index is an outer group | display order |
+| `groupable` | Show Group / Ungroup in the column menu | `true` |
 
 ---
 
@@ -208,6 +212,55 @@ Controlled: `sort` + `onSortChange`, `search` + `onSearchChange`, `filters` + `o
 
 ---
 
+## Row grouping
+
+Group records by one or more columns. A lower `rowGroupIndex` is an outer group. Columns without an index follow their display order.
+
+```tsx
+const columns = createColumns<Employee>([
+  { field: 'country', rowGroup: true, rowGroupIndex: 0 },
+  { field: 'department', rowGroup: true, rowGroupIndex: 1 },
+  { field: 'name' },
+]);
+
+<ReactDataGrid
+  data={employees}
+  columns={columns}
+  getRowId="id"
+  enableRowGrouping // drop zone above the grid: drag a column header here
+/>
+```
+
+That configuration renders:
+
+```
+India
+  Sales
+    Priya
+USA
+  Sales
+    John
+    Sarah
+  Support
+    David
+```
+
+- Groups are built after search, filters, and sort, then pages are sliced from that list. A group contains only rows that passed the active search and filters.
+- Each group row shows the formatted value and how many records sit under it, for example `USA (12)`. `null`, `undefined`, and `''` share one group labeled `(Blank)` (`messages.blankGroup`).
+- Groups start expanded. Click a group row, or press Enter or Space, to expand or collapse that group only. Collapsing a parent hides its descendants. Expanding the parent again restores each child's previous state. Expansion is remembered by the group identity (column, value, and parent), so it survives sorting and data updates.
+- Group order uses that column's sort direction, or ascending when the column is not in the current sort. Further sort levels order the records inside the innermost group. Empty values stay last in both directions, including the blank group.
+- Strings, numbers, booleans, dates, and enums group by value. Two objects with the same fields form one group. A `valueGetter` supplies the value used for grouping. `format` changes the label only.
+- The grouped column stays visible. Set `groupable: false` when the column should stay grouped and the column menu should not offer Group / Ungroup.
+- `enableRowGrouping` defaults to `false`. Columns that set `rowGroup` still group when the prop is omitted. With the prop on, a **Drag here to set row groups** bar appears above the grid. Drag a column header onto the bar to group by it, drag the chips to change the grouping order, and use the chip's remove button to ungroup. Drag a chip off the bar to remove that group. The column menu can still group, ungroup, and move a level. Removing every grouped column returns the normal flat grid. The bar is hidden when `enableRowGrouping` is off, so the rest of the grid looks the same.
+- Changing which columns are grouped, or their order, returns to the first page. Page size counts group headers plus the records currently visible. The number on a group is the full filtered total, including records on other pages.
+- Grouping is stored on column state as `rowGroup` and `rowGroupIndex`, and is saved with `persistStateKey`.
+- The table, card grid, and list all show group rows. In the card grid, each group header and each card is its own row while grouping is on.
+- Server mode skips browser grouping, because the grid only holds the current page. A development warning is logged when a column sets `rowGroup`. Group on the host if the page should arrive already grouped.
+
+Messages: `groupByColumn`, `ungroupColumn`, `moveGroupUp`, `moveGroupDown`, `blankGroup`, `groupCount(count)`.
+
+---
+
 ## Pagination and scrolling
 
 ```tsx
@@ -224,6 +277,7 @@ Controlled: `sort` + `onSortChange`, `search` + `onSearchChange`, `filters` + `o
 - Changing search or filters goes back to page 1. If data shrinks, the page moves to the last valid page.
 - Changing the page size keeps the first visible record on screen.
 - In scroll mode only the visible rows, cards or list items are rendered, so scrolling stays smooth at 100k rows.
+- With row grouping, a page is a slice of group headers and expanded records. A group's count still includes every matching record.
 
 ---
 
@@ -262,7 +316,7 @@ For data that's too large to send to the browser, the grid asks your app for one
 />
 ```
 
-While loading, a spinner shows over the current rows. On error, a banner with **Retry** appears above the rows that are still visible. In server mode, “select all” covers the loaded page. `pagination="scroll"` isn't supported in server mode.
+While loading, a spinner shows over the current rows. On error, a banner with **Retry** appears above the rows that are still visible. In server mode, “select all” covers the loaded page. `pagination="scroll"` isn't supported in server mode. Browser row grouping is skipped in server mode; group the data on the host before returning the page.
 
 ---
 
@@ -288,7 +342,7 @@ While loading, a spinner shows over the current rows. On error, a banner with **
 
 ## Column management and saved preferences
 
-In the table view, users can resize columns (drag the header edge, or Alt+←/→), reorder them (drag a header, or **Move left/right** in the column menu), hide or show them (column menu or **Columns** button), and pin them to the start or end. Hidden columns and column order also apply to the grid and list views.
+In the table view, users can resize columns (drag the header edge, or Alt+←/→), reorder them (drag a header, or **Move left/right** in the column menu), hide or show them (column menu or **Columns** button), and pin them to the start or end. Hidden columns and column order also apply to the grid and list views. With `enableRowGrouping`, drag a column header onto the row group bar to group. See [Row grouping](#row-grouping).
 
 ```tsx
 <ReactDataGrid
@@ -304,7 +358,7 @@ In the table view, users can resize columns (drag the header edge, or Alt+←/�
 />
 ```
 
-Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns and disallowed views are ignored. Selection, search, filters and page are never saved. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
+Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns and disallowed views are ignored. The saved column layout includes width, order, visibility, pinning, and row grouping (`rowGroup`, `rowGroupIndex`). Selection, search, filters, page, and which groups are expanded are never saved. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
 
 ---
 
@@ -334,7 +388,7 @@ Every token is a CSS custom property on `.aits-root`, so you can also set tokens
 
 Tokens: `colorBg`, `colorSurface`, `colorSurfaceAlt`, `colorBorder`, `colorText`, `colorTextMuted`, `colorAccent`, `colorAccentText`, `colorSelectedBg`, `colorFocusRing`, `colorDanger`, `fontFamily`, `fontSize`, `radius`, `spacing`, `rowHeight`, `headerHeight`, `cardGap`, `shadow`. Each maps to `--aits-<kebab-case>`.
 
-All package styles sit in the `@layer aits` cascade layer, so your own CSS wins without any specificity tricks. Stable class hooks: `.aits-root`, `.aits-toolbar`, `.aits-table`, `.aits-header-cell`, `.aits-row`, `.aits-cell`, `.aits-grid`, `.aits-card`, `.aits-list`, `.aits-list-item`, `.aits-pagination`, `.aits-empty`, `.aits-error`. State attributes: `[data-selected]`, `[data-pinned]`, `[data-density]`, `[data-color-scheme]`, `[data-view]`.
+All package styles sit in the `@layer aits` cascade layer, so your own CSS wins without any specificity tricks. Stable class hooks: `.aits-root`, `.aits-toolbar`, `.aits-table`, `.aits-header-cell`, `.aits-row`, `.aits-cell`, `.aits-grid`, `.aits-card`, `.aits-list`, `.aits-list-item`, `.aits-group-banner`, `.aits-group-label`, `.aits-group-count`, `.aits-pagination`, `.aits-empty`, `.aits-error`. State attributes: `[data-selected]`, `[data-pinned]`, `[data-group]`, `[data-density]`, `[data-color-scheme]`, `[data-view]`.
 
 ---
 
@@ -383,6 +437,7 @@ The component targets **WCAG 2.2 AA**. It follows the WAI-ARIA grid, listbox and
 | Table / grid view | ←/→/↑/↓ move · Home/End (row start/end) · Ctrl+Home/End (first/last) · PageUp/PageDown |
 | List view | ↑/↓ · Home/End · PageUp/PageDown |
 | Any record | Enter = activate (`onRowActivate`) · Space = select · Shift+Space = select range · Ctrl/⌘+A = select all |
+| Group row | Enter or Space expands or collapses that group |
 | Table header | Enter/Space = sort (Shift = add to multi-sort) · Alt+↓ or Shift+F10 = column menu · Alt+←/→ = resize |
 | View switcher | ←/→ (↑/↓) · Home/End |
 | Menus / dialogs | ↑/↓ in menus · Esc closes and returns focus |
@@ -477,6 +532,7 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 |---|---|---|
 | `columnState` / `defaultColumnState` / `onColumnStateChange` | `ColumnStateItem[]` | from `columns` |
 | `enableColumnResize` / `enableColumnReorder` / `enableColumnHide` / `enableColumnPin` | `boolean` | `true` |
+| `enableRowGrouping` | `boolean` | `false` |
 | `persistStateKey` | `string` | off |
 | `onStateChange` | `(state: GridState, changed: keyof GridState) => void` | — |
 

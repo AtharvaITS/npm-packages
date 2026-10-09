@@ -1,6 +1,7 @@
 import { createContext, useContext, type KeyboardEvent, type MouseEvent } from 'react';
 import type { EffectiveColumn } from '../core/columnState';
 import type { FormatOptions } from '../core/format';
+import type { DisplayItem } from '../core/group';
 import type { ReactDataGridProps, ColumnStateItem, Messages, RowId, SelectionMode } from '../types';
 import type { GridStateApi } from './useGridState';
 
@@ -23,10 +24,15 @@ export interface ColumnActions {
   setPinned(id: string, pinned: 'start' | 'end' | null): void;
   move(id: string, targetId: string): void;
   moveBy(id: string, delta: -1 | 1): void;
+  setRowGroup(id: string, rowGroup: boolean): void;
+  moveGroup(id: string, delta: -1 | 1): void;
+  /** Insert `id` into the grouping order, before `beforeId`, or at the end when `beforeId` is null. */
+  placeRowGroup(id: string, beforeId: string | null): void;
   canResize: boolean;
   canReorder: boolean;
   canHide: boolean;
   canPin: boolean;
+  canGroup: boolean;
 }
 
 export interface GridContextValue<TRow = any> {
@@ -47,10 +53,17 @@ export interface GridContextValue<TRow = any> {
   pagination: 'pages' | 'scroll';
   /** Row indexes (into `rows`) to display: the current page, or all matches when scrolling. */
   displayIndexes: readonly number[];
+  /** Current page of data rows and group rows. Data-only when grouping is off. */
+  displayItems: readonly DisplayItem[];
+  /** True when at least one column is grouped and the grid is not in server mode. */
+  grouping: boolean;
+  toggleGroup(key: string): void;
   /** Absolute 0-based position of displayIndexes[0] among all matching rows. */
   rowOffset: number;
-  /** Total matching rows (all pages). */
+  /** Leaf rows matching search and filters (all pages). Server mode uses the host total. */
   totalCount: number;
+  /** Rows passed to pagination: leaf matches, or group rows plus visible leaves when grouping. */
+  displayTotal: number;
   /** Rows in the data before search/filters (client mode) or total count (server mode). */
   dataCount: number;
   selection: SelectionApi;

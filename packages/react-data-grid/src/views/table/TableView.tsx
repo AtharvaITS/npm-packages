@@ -6,7 +6,9 @@ import { useIsomorphicLayoutEffect } from '../../state/useIsomorphicLayoutEffect
 import { useElementSize } from '../../virtual/useElementSize';
 import { useVirtualRows } from '../../virtual/useVirtualRows';
 import { SelectCheckbox } from '../SelectCheckbox';
+import type { DisplayItem } from '../../core/group';
 import { HeaderCell } from './HeaderCell';
+import { GroupRow } from './GroupRow';
 import { Row } from './Row';
 import { useColumnReorder } from './useColumnReorder';
 import { useColumnResize } from './useColumnResize';
@@ -17,7 +19,7 @@ const KEYBOARD_RESIZE_STEP = 10;
 /** Table view: ARIA grid with sticky header, pinned columns and optional virtualization. */
 export function TableView() {
   const ctx = useGrid();
-  const { visibleColumns, displayIndexes, selection, columnActions, messages, rtl } = ctx;
+  const { visibleColumns, displayItems, selection, columnActions, messages, rtl } = ctx;
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export function TableView() {
   }, [visibleColumns, hasSelect, resize.draft, containerWidth]);
 
   const virtual = useVirtualRows({
-    count: displayIndexes.length,
+    count: displayItems.length,
     itemSize: ctx.rowHeight,
     scrollRef,
     enabled: scroll,
@@ -128,8 +130,20 @@ export function TableView() {
       }
       return;
     }
-    const rowIndex = displayIndexes[pos.row - 1];
-    if (rowIndex !== undefined) ctx.activateRow(rowIndex, event);
+    const item = displayItems[pos.row - 1];
+    if (!item) return;
+    switch (item.kind) {
+      case 'group':
+        ctx.toggleGroup(item.key);
+        return;
+      case 'data':
+        ctx.activateRow(item.index, event);
+        return;
+      default: {
+        const _exhaustive: never = item;
+        return _exhaustive;
+      }
+    }
   };
 
   const onToggle = (pos: Position, event: KeyboardEvent) => {
@@ -137,9 +151,20 @@ export function TableView() {
       onActivate(pos, event);
       return;
     }
-    const rowIndex = displayIndexes[pos.row - 1];
-    if (rowIndex !== undefined && hasSelect)
-      selection.toggleRow(rowIndex, { range: event.shiftKey });
+    const item = displayItems[pos.row - 1];
+    if (!item) return;
+    switch (item.kind) {
+      case 'group':
+        ctx.toggleGroup(item.key);
+        return;
+      case 'data':
+        if (hasSelect) selection.toggleRow(item.index, { range: event.shiftKey });
+        return;
+      default: {
+        const _exhaustive: never = item;
+        return _exhaustive;
+      }
+    }
   };
 
   const onKey = (pos: Position, event: KeyboardEvent) => {
@@ -179,7 +204,7 @@ export function TableView() {
   };
 
   const roving = useRovingFocus({
-    rowCount: displayIndexes.length + 1,
+    rowCount: displayItems.length + 1,
     colCount,
     containerRef: scrollRef,
     rtl,
@@ -199,7 +224,7 @@ export function TableView() {
   }
 
   const start = scroll ? virtual.start : 0;
-  const end = scroll ? virtual.end : displayIndexes.length;
+  const end = scroll ? virtual.end : displayItems.length;
   const activeRendered =
     roving.active.row === 0 || (roving.active.row - 1 >= start && roving.active.row - 1 < end);
   const itemProps = (row: number, col: number) => {
@@ -210,19 +235,52 @@ export function TableView() {
 
   const rows = [];
   for (let p = start; p < end; p++) {
-    const rowIndex = displayIndexes[p]!;
-    rows.push(
-      <Row
-        key={ctx.rowIds[rowIndex]}
-        rowIndex={rowIndex}
-        focusRow={p + 1}
-        ariaRowIndex={ctx.rowOffset + p + 2}
-        columns={visibleColumns}
-        cellStyles={layout.styles}
-        selectStyle={layout.selectStyle}
-        activeCol={roving.active.row === p + 1 ? roving.active.col : -1}
-      />,
-    );
+    const item = displayItems[p]!;
+    const focusRow = p + 1;
+    const ariaRowIndex = ctx.rowOffset + p + 2;
+    const activeCol = roving.active.row === focusRow ? roving.active.col : -1;
+    rows.push(renderBodyRow(item, p, focusRow, ariaRowIndex, activeCol));
+  }
+
+  function renderBodyRow(
+    item: DisplayItem,
+    position: number,
+    focusRow: number,
+    ariaRowIndex: number,
+    activeCol: number,
+  ) {
+    switch (item.kind) {
+      case 'group':
+        return (
+          <GroupRow
+            key={`group:${item.key}`}
+            item={item}
+            focusRow={focusRow}
+            ariaRowIndex={ariaRowIndex}
+            hasSelect={hasSelect}
+            selectStyle={layout.selectStyle}
+            activeCol={activeCol}
+          />
+        );
+      case 'data':
+        return (
+          <Row
+            key={ctx.rowIds[item.index] ?? position}
+            rowIndex={item.index}
+            focusRow={focusRow}
+            ariaRowIndex={ariaRowIndex}
+            columns={visibleColumns}
+            cellStyles={layout.styles}
+            selectStyle={layout.selectStyle}
+            activeCol={activeCol}
+            depth={item.depth}
+          />
+        );
+      default: {
+        const _exhaustive: never = item;
+        return _exhaustive;
+      }
+    }
   }
 
   const containerStyle: CSSProperties = scroll
@@ -236,7 +294,7 @@ export function TableView() {
       ref={scrollRef}
       className="aits-table"
       role="grid"
-      aria-rowcount={ctx.totalCount + 1}
+      aria-rowcount={ctx.displayTotal + 1}
       aria-colcount={colCount}
       aria-label={ctx.props['aria-label']}
       aria-labelledby={ctx.props['aria-labelledby']}

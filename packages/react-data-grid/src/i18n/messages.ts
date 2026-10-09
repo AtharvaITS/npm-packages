@@ -75,6 +75,15 @@ export const defaultMessages: Messages = {
   clearSelection: 'Clear selection',
   pageStatus: (page, pageCount) => `Page ${page} of ${pageCount}`,
   resizeColumn: 'Resize column',
+  groupByColumn: 'Group by this column',
+  ungroupColumn: 'Ungroup',
+  moveGroupUp: 'Move group up',
+  moveGroupDown: 'Move group down',
+  blankGroup: '(Blank)',
+  groupCount: (count) => `(${count})`,
+  rowGroupPanelLabel: 'Row groups',
+  rowGroupDropHint: 'Drag here to set row groups',
+  removeRowGroup: (header) => `Remove ${header} from grouping`,
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {

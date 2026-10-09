@@ -117,6 +117,10 @@ export function readPersisted(
         if (typeof c.width === 'number' && Number.isFinite(c.width)) item.width = c.width;
         if (typeof c.hidden === 'boolean') item.hidden = c.hidden;
         if (c.pinned === 'start' || c.pinned === 'end' || c.pinned === null) item.pinned = c.pinned;
+        if (typeof c.rowGroup === 'boolean') item.rowGroup = c.rowGroup;
+        if (typeof c.rowGroupIndex === 'number' && Number.isFinite(c.rowGroupIndex)) {
+          item.rowGroupIndex = c.rowGroupIndex;
+        }
         return item;
       });
   }

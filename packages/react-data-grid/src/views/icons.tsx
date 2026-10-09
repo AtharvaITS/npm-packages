@@ -79,6 +79,24 @@ export const ColumnsIcon = () => (
     <path d="M6 3v10M10 3v10" />
   </svg>
 );
+export const GroupDragIcon = () => (
+  <svg {...base} className="aits-icon">
+    <circle cx="6" cy="4.5" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="4.5" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="8" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="8" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="11.5" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="11.5" r="0.7" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/** Points inline-end. Group rows rotate it when expanded. */
+export const GroupChevronIcon = () => (
+  <svg {...base} className="aits-icon">
+    <path d="M6 4l4 4-4 4" />
+  </svg>
+);
+
 export const ChevronIcon = ({ dir }: { dir: 'first' | 'prev' | 'next' | 'last' }) => (
   <svg {...base} className="aits-icon aits-icon-flip-rtl">
     {dir === 'first' && <path d="M11 4L7 8l4 4M4.5 4v8" />}
