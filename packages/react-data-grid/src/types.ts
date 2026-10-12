@@ -172,7 +172,31 @@ export interface Messages {
   clearSelection: string;
   pageStatus: (page: number, pageCount: number) => string;
   resizeColumn: string;
+  // Export options.
+  exportLabel: string;
+  exportTitle: string;
+  exportScope: string;
+  exportScopeView: string;
+  exportScopeAll: string;
+  exportScopePage: string;
+  exportScopeSelected: string;
+  exportFormat: string;
+  exportFormatCsv: string;
+  exportFormatExcel: string;
+  exportFormatPdf: string;
+  exportAction: string;
+  exportCancel: string;
+  exportEmpty: string;
+  exportNoneSelected: string;
+  exportServerNote: string;
+  exportDone: (count: number) => string;
 }
+
+/** Which rows an export includes. */
+export type ExportScope = 'view' | 'all' | 'page' | 'selected';
+
+/** File format produced by the export dialog. */
+export type ExportFormat = 'csv' | 'excel' | 'pdf';
 
 export interface CellContext<TRow = Record<string, unknown>> {
   row: TRow;
@@ -296,6 +320,12 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   defaultFilters?: FilterCondition[];
   onFiltersChange?: (filters: FilterCondition[]) => void;
   filterable?: boolean;
+
+  // ---- Export -----------------------------------------------------------
+  /** Shows the Export button. Set false to hide it. */
+  exportable?: boolean;
+  /** Download name. The format extension is added when it is missing. */
+  exportFileName?: string;
 
   // ---- Pagination / scrolling -------------------------------------------
   pagination?: 'pages' | 'scroll';
