@@ -28,6 +28,8 @@
 14. [Server-side rendering](#server-side-rendering)
 15. [Browser support](#browser-support)
 16. [Props reference](#props-reference)
+17. [Inline cell editing](#inline-cell-editing)
+
 
 ---
 
@@ -412,6 +414,63 @@ The component targets **WCAG 2.2 AA**. It follows the WAI-ARIA grid, listbox and
 | Menus / dialogs | ↑/↓ in menus · Esc closes and returns focus |
 
 ---
+## Inline cell editing
+
+Double-click a cell to edit it. The grid does not write the new value into `data`. `onCellEdit` tells you what changed, and you update your state (or send it to an API). Editing is off until you pass `onCellEdit`.
+
+```tsx
+type Person = { id: string; name: string; city: string; active: boolean; qty: number };
+
+const [people, setPeople] = useState<Person[]>([
+  { id: '1', name: 'Ada', city: 'London', active: true, qty: 2 },
+]);
+
+<ReactDataGrid
+  data={people}
+  getRowId="id"
+  onCellEdit={(edit) => {
+    setPeople((current) =>
+      current.map((row) => {
+        if (row.id !== edit.rowId) return row;
+        // valueSetter columns already return the next row. Field columns use edit.field.
+        return edit.nextRow ?? { ...row, [edit.field]: edit.value };
+      }),
+    );
+  }}
+/>
+```
+
+**How to edit**
+
+1. Double-click the cell in the table, or the same field on a card or list item.
+2. Change the value. Text and numbers use a text box (numbers use a decimal keypad on mobile). Dates that are `Date` objects or `YYYY-MM-DD` strings use a date input. Booleans use a checkbox. Columns with `enumValues` use a dropdown.
+3. Press Enter to save. Press Escape, or move focus away, to cancel. A cancelled edit does not call `onCellEdit`.
+4. An invalid number (for example `abc` in a number column) is discarded and `onCellEdit` is not called.
+
+**Which columns can be edited**
+
+- A column with `field` and no `valueGetter` and no `render`.
+- A `valueGetter` column only when it also has `valueSetter`. The callback receives `nextRow` from `valueSetter`.
+- A column with `render` is never edited.
+
+```tsx
+{
+  id: 'label',
+  header: 'Label',
+  valueGetter: (row) => `${row.name} (${row.city})`,
+  valueSetter: (row, value) => {
+    const text = String(value ?? '');
+    const match = /^(.*)\(([^()]*)\)\s*$/.exec(text);
+    if (!match) return { ...row, name: text.trim() };
+    return { ...row, name: match[1]!.trim(), city: match[2]!.trim() };
+  },
+}
+```
+
+Double-click **Label**, change `Ada (London)` to `Grace (Paris)`, press Enter. `onCellEdit` includes `value: 'Grace (Paris)'` and `nextRow` with `name: 'Grace'` and `city: 'Paris'`. If you omit `valueSetter`, the double-click does nothing.
+
+---
+
 
 ## Server-side rendering
 
