@@ -92,7 +92,7 @@ The component **never modifies** the array you pass.
 Controlled view:
 
 ```tsx
-const [view, setView] = useState<ViewType>('table');
+const [view, setView] = useState<ViewType>('table');//if you use react +js remove this <ViewType>
 <ReactDataGrid data={rows} view={view} onViewChange={setView} />;
 ```
 
