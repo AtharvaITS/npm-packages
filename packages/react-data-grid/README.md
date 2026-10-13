@@ -4,7 +4,9 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, conditional formatting, header styling, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+
+
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, conditional formatting, header styling,paging or virtual scrolling (100,000+ rows), selection, export, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -17,9 +19,11 @@
 3. [Data, ids and columns](#data-ids-and-columns)
 4. [Sort, search and filter](#sort-search-and-filter)
 5. [Conditional formatting and header style](#conditional-formatting)
+6. [Server (host-managed) mode](#server-host-managed-mode)
+7. [Selection and activation](#selection-and-activation)
 6. [Pagination and scrolling](#pagination-and-scrolling)
-7. [Server (host-managed) mode](#server-host-managed-mode)
-8. [Selection and activation](#selection-and-activation)
+
+8. [Export options](#export-options)
 9. [Column management and saved preferences](#column-management-and-saved-preferences)
 10. [Theming](#theming)
 11. [Localization and right-to-left](#localization-and-right-to-left)
@@ -28,6 +32,8 @@
 14. [Server-side rendering](#server-side-rendering)
 15. [Browser support](#browser-support)
 16. [Props reference](#props-reference)
+17. [Inline cell editing](#inline-cell-editing)
+
 
 ---
 
@@ -53,7 +59,9 @@ export function People() {
 }
 ```
 
-That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, conditional formatting, header style, a column chooser, pagination and a table/grid/list switcher.
+
+
+That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, conditional formatting,header style, a column chooser, export, pagination and a table/grid/list switcher.
 
 What the zero-config defaults handle for you:
 
@@ -117,6 +125,8 @@ const [view, setView] = useState<ViewType>('table');
 <h2>{view === 'grid' ? 'Cards' : 'Table'}</h2>
 <button onClick={() => setView('grid')}>Show as cards</button>
 <ReactDataGrid data={products} view={view} onViewChange={setView} />
+const [view, setView] = useState<ViewType>('table');//if you use react +js remove this <ViewType>
+<ReactDataGrid data={rows} view={view} onViewChange={setView} />;
 ```
 
 1. Page opens → `view` is `'table'` → title says **Table**, grid is a table.
@@ -381,6 +391,29 @@ While loading, a spinner shows over the current rows. On error, a banner with **
 
 ---
 
+## Export options
+
+The toolbar **Export** button opens a dialog. Pick what to export and a format, then the grid downloads the file. Cell text matches what the grid shows (locale dates, currency, booleans, and column `format` functions).
+
+| Scope | Rows | Columns |
+|---|---|---|
+| Current Table View | Every row matching the current search, filters, and sort | All columns, including hidden ones, of every type |
+| All Data | Every source row, in the original order, ignoring search and filters | All columns, including hidden ones, of every type |
+| Current Page | The rows on the current page | All columns, including hidden ones, of every type |
+| Selected Rows | The current selection. A selected row that is hidden by search or filters is still included. | All columns, including hidden ones, of every type |
+
+Formats are **CSV** (UTF-8 with BOM), **Excel** (`.xlsx`), and **PDF** (landscape A4). In scroll mode there is no page, so Current Page exports the same rows as Current Table View. In server mode only the rows loaded in the grid can be exported.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  exportable // default true; false hides the button
+  exportFileName="orders" // downloads orders.csv, orders.xlsx, or orders.pdf
+/>
+```
+
+---
+
 ## Column management and saved preferences
 
 In the table view, users can resize columns (drag the header edge, or Alt+←/→), reorder them (drag a header, or **Move left/right** in the column menu), hide or show them (column menu or **Columns** button), and pin them to the start or end. Hidden columns and column order also apply to the grid and list views.
@@ -483,6 +516,63 @@ The component targets **WCAG 2.2 AA**. It follows the WAI-ARIA grid, listbox and
 | Menus / dialogs | ↑/↓ in menus · Esc closes and returns focus |
 
 ---
+## Inline cell editing
+
+Double-click a cell to edit it. The grid does not write the new value into `data`. `onCellEdit` tells you what changed, and you update your state (or send it to an API). Editing is off until you pass `onCellEdit`.
+
+```tsx
+type Person = { id: string; name: string; city: string; active: boolean; qty: number };
+
+const [people, setPeople] = useState<Person[]>([
+  { id: '1', name: 'Ada', city: 'London', active: true, qty: 2 },
+]);
+
+<ReactDataGrid
+  data={people}
+  getRowId="id"
+  onCellEdit={(edit) => {
+    setPeople((current) =>
+      current.map((row) => {
+        if (row.id !== edit.rowId) return row;
+        // valueSetter columns already return the next row. Field columns use edit.field.
+        return edit.nextRow ?? { ...row, [edit.field]: edit.value };
+      }),
+    );
+  }}
+/>
+```
+
+**How to edit**
+
+1. Double-click the cell in the table, or the same field on a card or list item.
+2. Change the value. Text and numbers use a text box (numbers use a decimal keypad on mobile). Dates that are `Date` objects or `YYYY-MM-DD` strings use a date input. Booleans use a checkbox. Columns with `enumValues` use a dropdown.
+3. Press Enter to save. Press Escape, or move focus away, to cancel. A cancelled edit does not call `onCellEdit`.
+4. An invalid number (for example `abc` in a number column) is discarded and `onCellEdit` is not called.
+
+**Which columns can be edited**
+
+- A column with `field` and no `valueGetter` and no `render`.
+- A `valueGetter` column only when it also has `valueSetter`. The callback receives `nextRow` from `valueSetter`.
+- A column with `render` is never edited.
+
+```tsx
+{
+  id: 'label',
+  header: 'Label',
+  valueGetter: (row) => `${row.name} (${row.city})`,
+  valueSetter: (row, value) => {
+    const text = String(value ?? '');
+    const match = /^(.*)\(([^()]*)\)\s*$/.exec(text);
+    if (!match) return { ...row, name: text.trim() };
+    return { ...row, name: match[1]!.trim(), city: match[2]!.trim() };
+  },
+}
+```
+
+Double-click **Label**, change `Ada (London)` to `Grace (Paris)`, press Enter. `onCellEdit` includes `value: 'Grace (Paris)'` and `nextRow` with `name: 'Grace'` and `city: 'Paris'`. If you omit `valueSetter`, the double-click does nothing.
+
+---
+
 
 ## Server-side rendering
 
@@ -553,6 +643,12 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `conditionalFormatting` | `boolean` | `true` |
 | `formatRules` / `defaultFormatRules` / `onFormatRulesChange` | `ConditionalFormatRule[]` | `[]` |
 | `headerStyle` / `defaultHeaderStyle` / `onHeaderStyleChange` | `HeaderStyle` | `{}` |
+### Export
+
+| Prop | Type | Default |
+|---|---|---|
+| `exportable` | `boolean` | `true` |
+| `exportFileName` | `string` | `'export'` |
 
 ### Pagination and scrolling
 
@@ -596,7 +692,10 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 
 ### Exports
 
-`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `ConditionalFormatRule`, `ConditionalFormatStyle`, `FormatOperator`, `FormatScope`, `FormatFontWeight`, `FormatFontStyle`, `HeaderStyle`, `HeaderFontWeight`, `HeaderTextTransform`, `SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
+
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, 
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, 
+`ConditionalFormatRule`, `ConditionalFormatStyle`, `HeaderStyle`, `HeaderFontWeight`, `HeaderTextTransform`,`FormatOperator`, `FormatScope`, `FormatFontWeight`, `FormatFontStyle`,`SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `ExportScope`, `ExportFormat`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
 
 ## License
 

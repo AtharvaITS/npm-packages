@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearPersisted,
+  createPersister,
   readPersisted,
   writePersisted,
   STORAGE_PREFIX,
@@ -142,5 +143,26 @@ describe('persist', () => {
     expect(readPersisted('mem', { ...ctx, views: [...ctx.views] })).toEqual(full);
     clearPersisted('mem');
     expect(readPersisted('mem', { ...ctx, views: [...ctx.views] })).toBeUndefined();
+  });
+
+  it('debounces writes and can flush or cancel the pending save', () => {
+    vi.useFakeTimers();
+    const persister = createPersister(300);
+    persister.schedule('emp', full);
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })).toBeUndefined();
+    vi.advanceTimersByTime(299);
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })).toBeUndefined();
+    vi.advanceTimersByTime(1);
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })).toEqual(full);
+
+    persister.schedule('emp', { ...full, view: 'list' });
+    persister.flush();
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.view).toBe('list');
+
+    persister.schedule('emp', { ...full, view: 'table' });
+    persister.cancel();
+    vi.advanceTimersByTime(300);
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.view).toBe('list');
+    vi.useRealTimers();
   });
 });

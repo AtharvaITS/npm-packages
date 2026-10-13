@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   compareOperator,
+  createRuleId,
+  describeRule,
   draftToRule,
   emptyDraft,
   formatToStyle,
+  isFormatOperator,
+  isNumericOperator,
+  operatorValueCount,
   resolveCellFormat,
+  resolveCellOnlyFormat,
   resolveRowFormat,
+  ruleMatches,
+  ruleToDraft,
   validateFormatRule,
+  FORMAT_OPERATORS,
   type FormatColumn,
 } from '../../src/conditional/evaluate';
 import type { ConditionalFormatRule, FormatOperator } from '../../src/types';
@@ -162,6 +171,40 @@ describe('conditional formatting operators', () => {
       fontStyle: 'italic',
     });
     expect(formatToStyle({ fontWeight: 'default', fontStyle: 'default' })).toBeUndefined();
+    expect(formatToStyle(undefined)).toBeUndefined();
+    expect(formatToStyle({})).toBeUndefined();
+    expect(formatToStyle({ backgroundColor: '#abc', textColor: '#def', fontWeight: 'normal', fontStyle: 'normal' })).toEqual({
+      backgroundColor: '#abc',
+      color: '#def',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      '--aits-cf-bg': '#abc',
+      '--aits-cf-color': '#def',
+    });
+    expect(formatToStyle({ fontWeight: '600', textColor: '#111111' })).toMatchObject({
+      color: '#111111',
+      fontWeight: '600',
+      '--aits-cf-color': '#111111',
+    });
+  });
+
+  it('folds case and accents, and treats a blank search as no match', () => {
+    expect(compareOperator('equal', 'José', 'jose', '', false)).toBe(true);
+    expect(compareOperator('equal', 15000, ' 15000 ', '', false)).toBe(true);
+    expect(compareOperator('notEqual', 50, '15000', '', false)).toBe(true);
+    expect(compareOperator('contains', 'Active', '   ', '', false)).toBe(false);
+    expect(compareOperator('startsWith', 'Active', '', '', false)).toBe(false);
+    expect(compareOperator('endsWith', 'Active', '', '', false)).toBe(false);
+    expect(compareOperator('equal', true, 'true', '', false)).toBe(true);
+    expect(compareOperator('equal', false, 'false', '', false)).toBe(true);
+    expect(compareOperator('notContains', false, 'yes', '', false)).toBe(true);
+    expect(compareOperator('between', 50, '100', '10', false)).toBe(true);
+    expect(compareOperator('notBetween', 50, '10', '100', false)).toBe(false);
+    expect(compareOperator('gte', '2020-01-15', '2020-01-15', '', true)).toBe(true);
+    expect(compareOperator('lte', '2020-01-15', '2020-01-15', '', true)).toBe(true);
+    expect(compareOperator('between', '2020-06-01', '2020-12-31', '2020-01-01', true)).toBe(true);
+    expect(compareOperator('notBetween', '2019-01-01', '2020-12-31', '2020-01-01', true)).toBe(true);
+    expect(compareOperator('between', '2020-06-01', '2020-01-01', 'not-a-date', true)).toBe(false);
   });
 });
 
@@ -212,6 +255,240 @@ describe('conditional formatting validation', () => {
       expect(saved.rule.value2).toBe('20');
       expect(saved.rule.scope).toBe('row');
       expect(saved.rule.style.fontWeight).toBe('600');
+      expect(saved.rule.style.backgroundColor).toBe('#fff3bf');
+      expect(saved.rule.style.fontStyle).toBe('italic');
+    }
+
+    expect(validateFormatRule({ ...emptyDraft(), columnId: 'status', operator: 'nope' as never }, 'text')).toBe(
+      'operator',
+    );
+    expect(validateFormatRule({ ...emptyDraft(), columnId: 'status', operator: 'equal', value: '   ' }, 'text')).toBe(
+      'value',
+    );
+    expect(
+      validateFormatRule(
+        { ...emptyDraft(), columnId: 'amount', operator: 'between', value: '  ', value2: '  ' },
+        'number',
+      ),
+    ).toBe('range');
+    expect(
+      validateFormatRule(
+        { ...emptyDraft(), columnId: 'amount', operator: 'notBetween', value: '1', value2: 'x' },
+        'number',
+      ),
+    ).toBe('number');
+    expect(
+      validateFormatRule(
+        { ...emptyDraft(), columnId: 'start', operator: 'between', value: '2020-01-01', value2: 'soon' },
+        'date',
+      ),
+    ).toBe('date');
+    expect(
+      validateFormatRule(
+        { ...emptyDraft(), columnId: 'start', operator: 'between', value: '2020-01-01', value2: '2020-12-31' },
+        'date',
+      ),
+    ).toBeNull();
+    expect(
+      validateFormatRule(
+        { ...emptyDraft(), columnId: 'amount', operator: 'between', value: '1', value2: '2' },
+        'number',
+      ),
+    ).toBeNull();
+    expect(
+      validateFormatRule({ ...emptyDraft(), columnId: 'amount', operator: 'equal', value: 'abc' }, 'number'),
+    ).toBeNull();
+
+    expect(draftToRule(emptyDraft(), 'missing', 'text')).toEqual({ ok: false, error: 'column' });
+
+    const emptyRule = draftToRule(
+      { ...emptyDraft(), columnId: 'country', operator: 'isEmpty', value: 'ignored', scope: 'cell' },
+      'empty-1',
+      'text',
+    );
+    expect(emptyRule.ok).toBe(true);
+    if (emptyRule.ok) {
+      expect(emptyRule.rule.value).toBeUndefined();
+      expect(emptyRule.rule.value2).toBeUndefined();
+      expect(emptyRule.rule.style.backgroundColor).toBeUndefined();
+      expect(emptyRule.rule.style.fontWeight).toBe('default');
+    }
+
+    const coerced = draftToRule(
+      { ...emptyDraft(), columnId: 'status', operator: 'equal', value: ' Active ', scope: 'column' as 'cell' },
+      'cell-1',
+      'text',
+    );
+    expect(coerced.ok).toBe(true);
+    if (coerced.ok) {
+      expect(coerced.rule.scope).toBe('cell');
+      expect(coerced.rule.value).toBe('Active');
+    }
+  });
+
+  it('round-trips a saved rule into an editor draft', () => {
+    const draft = ruleToDraft(
+      rule({
+        operator: 'gt',
+        columnId: 'amount',
+        value: '10',
+        scope: 'row',
+        style: { textColor: '#ffffff', fontStyle: 'italic' },
+      }),
+    );
+    expect(draft).toEqual({
+      columnId: 'amount',
+      operator: 'gt',
+      value: '10',
+      value2: '',
+      scope: 'row',
+      backgroundColor: '',
+      textColor: '#ffffff',
+      fontWeight: 'default',
+      fontStyle: 'italic',
+    });
+  });
+});
+
+describe('conditional formatting rule matching', () => {
+  it('classifies every operator', () => {
+    expect(FORMAT_OPERATORS).toHaveLength(14);
+    for (const operator of FORMAT_OPERATORS) {
+      expect(isFormatOperator(operator)).toBe(true);
+      expect(operatorValueCount(operator)).toBe(
+        operator === 'isEmpty' || operator === 'isNotEmpty' ? 0 : operator === 'between' || operator === 'notBetween' ? 2 : 1,
+      );
+      expect(isNumericOperator(operator)).toBe(
+        operator === 'lt' || operator === 'lte' || operator === 'gt' || operator === 'gte' || operator === 'between' || operator === 'notBetween',
+      );
+    }
+    expect(isFormatOperator('contains-not')).toBe(false);
+    expect(isFormatOperator('')).toBe(false);
+  });
+
+  it('skips an unknown column, a bad operator, and a getter that throws', () => {
+    const broken: FormatColumn = {
+      id: 'broken',
+      header: 'Broken',
+      type: 'text',
+      valueGetter: () => {
+        throw new Error('boom');
+      },
+    };
+    expect(ruleMatches(rule({ operator: 'equal', columnId: 'missing', value: 'Active' }), ada, columns)).toBe(false);
+    expect(
+      ruleMatches(
+        { ...rule({ operator: 'equal', columnId: 'status', value: 'Active' }), operator: 'nope' as 'equal' },
+        ada,
+        columns,
+      ),
+    ).toBe(false);
+    expect(
+      ruleMatches(rule({ operator: 'isEmpty', columnId: 'broken' }), ada, [...columns, broken]),
+    ).toBe(true);
+    expect(ruleMatches(rule({ operator: 'gt', columnId: 'start', value: '2019-01-01' }), ada, columns)).toBe(true);
+  });
+
+  it('keeps cell-only paint separate from the row', () => {
+    const rules = [
+      rule({
+        id: 'row',
+        operator: 'gt',
+        columnId: 'amount',
+        value: '10000',
+        scope: 'row',
+        style: { backgroundColor: '#ffff00' },
+      }),
+      rule({
+        id: 'cell',
+        operator: 'equal',
+        columnId: 'status',
+        value: 'Active',
+        scope: 'cell',
+        style: { textColor: '#ffffff' },
+      }),
+    ];
+    expect(resolveCellOnlyFormat(rules, ada, columns, 'status')).toEqual({ textColor: '#ffffff' });
+    expect(resolveCellOnlyFormat(rules, ada, columns, 'amount')).toBeUndefined();
+    expect(resolveRowFormat(rules, ada, columns)).toEqual({ backgroundColor: '#ffff00' });
+    expect(resolveCellFormat(rules, ada, columns, 'country')).toEqual({ backgroundColor: '#ffff00' });
+    expect(resolveCellFormat(rules, ada, columns, 'missing')).toEqual({ backgroundColor: '#ffff00' });
+  });
+
+  it('leaves earlier properties in place when a later rule sets a different one', () => {
+    const rules = [
+      rule({ id: '1', operator: 'equal', columnId: 'status', value: 'Active', style: { backgroundColor: '#111111' } }),
+      rule({ id: '2', operator: 'equal', columnId: 'status', value: 'Paused', style: { textColor: '#222222' } }),
+      rule({
+        id: '3',
+        operator: 'equal',
+        columnId: 'status',
+        value: 'Active',
+        style: { fontWeight: 'default', fontStyle: 'default' },
+      }),
+    ];
+    expect(resolveCellFormat(rules, ada, columns, 'status')).toEqual({ backgroundColor: '#111111' });
+  });
+
+  it('describes a rule for the list', () => {
+    const labels = {
+      operator: 'Equal',
+      scope: 'Cell',
+      background: 'Background',
+      text: 'Text',
+      font: 'Font',
+      fontWeight: 'Bold',
+      fontStyle: 'Italic',
+    };
+    expect(describeRule(rule({ operator: 'equal', columnId: 'status', value: 'Active' }), 'Status', labels)).toEqual({
+      title: 'Status | Equal | Active | Cell',
+      details: ['Background: #ff0000'],
+    });
+    expect(
+      describeRule(
+        rule({
+          operator: 'between',
+          columnId: 'amount',
+          value: '1',
+          value2: '9',
+          scope: 'row',
+          style: { textColor: '#ffffff', fontWeight: '700', fontStyle: 'italic' },
+        }),
+        'Amount',
+        { ...labels, operator: 'Between', scope: 'Row' },
+      ),
+    ).toEqual({
+      title: 'Amount | Between | 1 – 9 | Row',
+      details: ['Text: #ffffff', 'Font: Bold, Italic'],
+    });
+    expect(
+      describeRule(rule({ operator: 'isEmpty', columnId: 'country', style: {} }), 'Country', {
+        ...labels,
+        operator: 'Is empty',
+      }),
+    ).toEqual({ title: 'Country | Is empty | Cell', details: [] });
+    expect(
+      describeRule(
+        { ...rule({ operator: 'equal', columnId: 'status', value: 'Active', style: { fontWeight: '600' } }), operator: 'nope' as 'equal' },
+        'Status',
+        labels,
+      ).title,
+    ).toBe('Status | Equal | Active | Cell');
+  });
+
+  it('creates distinct rule ids', () => {
+    const first = createRuleId();
+    const second = createRuleId();
+    expect(first).not.toBe(second);
+    expect(first.length).toBeGreaterThan(8);
+
+    const cryptoObj = globalThis.crypto;
+    const descriptor = Object.getOwnPropertyDescriptor(cryptoObj, 'randomUUID');
+    Object.defineProperty(cryptoObj, 'randomUUID', { configurable: true, value: undefined });
+    try {
+      expect(createRuleId()).toMatch(/^cf-[a-z0-9]+-[a-z0-9]+$/);
+    } finally {
+      if (descriptor) Object.defineProperty(cryptoObj, 'randomUUID', descriptor);
     }
   });
 });

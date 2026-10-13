@@ -80,6 +80,12 @@ export const FormatIcon = () => (
     <path d="M6.2 8.4h3.6" />
   </svg>
 );
+export const ExportIcon = () => (
+  <svg {...base}>
+    <path d="M8 2.5v7M5.2 7.2L8 10l2.8-2.8" />
+    <path d="M3 11.5V13h10v-1.5" />
+  </svg>
+);
 export const ColumnsIcon = () => (
   <svg {...base}>
     <rect x="2" y="3" width="12" height="10" rx="1" />

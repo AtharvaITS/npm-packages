@@ -26,6 +26,8 @@ export type {
   HeaderFontWeight,
   HeaderStyle,
   HeaderTextTransform,
+  ExportFormat,
+  ExportScope,
   FilterCondition,
   FilterOperator,
   FormatFontStyle,
