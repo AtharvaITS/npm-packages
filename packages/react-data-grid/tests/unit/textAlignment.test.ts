@@ -1,49 +1,84 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TEXT_ALIGN_VALUES,
   describeTextAlignment,
   draftToTextAlignment,
   hasTextAlignment,
+  isTextAlignValue,
   textAlignmentCellStyle,
   textAlignmentHeaderContentStyle,
   textAlignmentToDraft,
 } from '../../src/conditional/textAlignment';
+import type { TextAlignValue } from '../../src/types';
 
-describe('text alignment', () => {
+const labels = { left: 'Left', center: 'Center', right: 'Right' };
+
+describe('text alignment guards', () => {
+  it('accepts only left, center, and right', () => {
+    for (const value of TEXT_ALIGN_VALUES) expect(isTextAlignValue(value)).toBe(true);
+    expect(isTextAlignValue('justify')).toBe(false);
+    expect(isTextAlignValue('LEFT')).toBe(false);
+    expect(isTextAlignValue('')).toBe(false);
+  });
+});
+
+describe('text alignment draft', () => {
   it('starts a new rule on Left and keeps an applied alignment', () => {
+    expect(textAlignmentToDraft(undefined)).toEqual({ alignment: 'left' });
     expect(textAlignmentToDraft({})).toEqual({ alignment: 'left' });
     expect(textAlignmentToDraft({ alignment: 'center' })).toEqual({ alignment: 'center' });
     expect(draftToTextAlignment({ alignment: 'right' })).toEqual({ alignment: 'right' });
   });
 
-  it('maps one alignment onto header and cell CSS', () => {
+  it.each(TEXT_ALIGN_VALUES)('saves %s as the single applied alignment', (alignment: TextAlignValue) => {
+    expect(draftToTextAlignment({ alignment })).toEqual({ alignment });
+    expect(textAlignmentToDraft({ alignment })).toEqual({ alignment });
+  });
+});
+
+describe('text alignment css', () => {
+  it('leaves the existing column alignment when nothing is applied', () => {
+    expect(textAlignmentCellStyle(undefined)).toBeUndefined();
     expect(textAlignmentCellStyle({})).toBeUndefined();
-    expect(textAlignmentCellStyle({ alignment: 'left' })).toEqual({
-      textAlign: 'left',
-      justifyContent: 'flex-start',
-    });
-    expect(textAlignmentCellStyle({ alignment: 'center' })).toEqual({
-      textAlign: 'center',
-      justifyContent: 'center',
-    });
-    expect(textAlignmentCellStyle({ alignment: 'right' })).toEqual({
-      textAlign: 'right',
-      justifyContent: 'flex-end',
-    });
-    expect(textAlignmentHeaderContentStyle({ alignment: 'right' })).toEqual({
-      textAlign: 'right',
-      justifyContent: 'flex-start',
-      flexDirection: 'row-reverse',
-    });
-    expect(textAlignmentHeaderContentStyle({ alignment: 'center' })?.flexDirection).toBe('row');
+    expect(textAlignmentHeaderContentStyle(undefined)).toBeUndefined();
+    expect(textAlignmentHeaderContentStyle({})).toBeUndefined();
+    expect(hasTextAlignment(undefined)).toBe(false);
+    expect(hasTextAlignment({})).toBe(false);
   });
 
-  it('describes the single applied alignment', () => {
-    const labels = { left: 'Left', center: 'Center', right: 'Right' };
-    expect(hasTextAlignment({})).toBe(false);
-    expect(hasTextAlignment({ alignment: 'center' })).toBe(true);
-    expect(describeTextAlignment({ alignment: 'center' }, 'Text Alignment', labels)).toBe(
-      'Text Alignment: Center',
-    );
+  it.each([
+    ['left', 'flex-start', 'flex-start', 'row'],
+    ['center', 'center', 'center', 'row'],
+    ['right', 'flex-end', 'flex-start', 'row-reverse'],
+  ] as const)(
+    'maps %s onto cells and the header label',
+    (alignment: TextAlignValue, cellJustify, headerJustify, flexDirection) => {
+      expect(textAlignmentCellStyle({ alignment })).toEqual({
+        textAlign: alignment,
+        justifyContent: cellJustify,
+      });
+      expect(textAlignmentHeaderContentStyle({ alignment })).toEqual({
+        textAlign: alignment,
+        justifyContent: headerJustify,
+        flexDirection,
+      });
+      expect(hasTextAlignment({ alignment })).toBe(true);
+    },
+  );
+});
+
+describe('text alignment summary', () => {
+  it('omits the summary when no alignment is applied', () => {
     expect(describeTextAlignment({}, 'Text Alignment', labels)).toBeUndefined();
+  });
+
+  it.each([
+    ['left', 'Left'],
+    ['center', 'Center'],
+    ['right', 'Right'],
+  ] as const)('names %s', (alignment: TextAlignValue, name) => {
+    expect(describeTextAlignment({ alignment }, 'Text Alignment', labels)).toBe(
+      `Text Alignment: ${name}`,
+    );
   });
 });
