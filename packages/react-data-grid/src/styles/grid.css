@@ -956,14 +956,12 @@
     }
   }
 
-<<<<<<< HEAD
-  /* Shared by the format dialog. */
-=======
   /* ---------- Export options ---------- */
   .aits-export-panel {
     min-width: min(18rem, calc(100vw - 16px));
   }
->>>>>>> main
+
+  /* Shared by the format dialog. */
   .aits-export-fieldset {
     margin: 0;
     padding: 0.25rem 0.25rem 0.5rem;
