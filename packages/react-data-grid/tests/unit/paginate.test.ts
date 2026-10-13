@@ -34,6 +34,15 @@ describe('paginate', () => {
     expect(clampPage(3, 0, 25)).toBe(0);
   });
 
+  it('treats a non-positive page size as a single page', () => {
+    expect(pageCount(10, 0)).toBe(1);
+    expect(pageCount(10, -5)).toBe(1);
+    expect(clampPage(Number.NaN, 10, 25)).toBe(0);
+    expect(pageForFirstVisible(-1, 25)).toBe(0);
+    expect(pageForFirstVisible(10, 0)).toBe(0);
+    expect(pageSlice(['a', 'b'], 0, 0)).toEqual([]);
+  });
+
   it('keeps the first visible record when the page size changes', () => {
     // On page 3 of size 25, the first visible record is index 75.
     expect(pageForFirstVisible(75, 50)).toBe(1);

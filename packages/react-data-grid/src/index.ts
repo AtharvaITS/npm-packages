@@ -23,6 +23,8 @@ export type {
   FetchDataOptions,
   ConditionalFormatRule,
   ConditionalFormatStyle,
+  ExportFormat,
+  ExportScope,
   FilterCondition,
   FilterOperator,
   FormatFontStyle,

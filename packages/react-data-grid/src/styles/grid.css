@@ -920,7 +920,14 @@
     }
   }
 
+<<<<<<< HEAD
   /* Shared by the format dialog. */
+=======
+  /* ---------- Export options ---------- */
+  .aits-export-panel {
+    min-width: min(18rem, calc(100vw - 16px));
+  }
+>>>>>>> main
   .aits-export-fieldset {
     margin: 0;
     padding: 0.25rem 0.25rem 0.5rem;
@@ -1060,5 +1067,16 @@
   .aits-list-item[data-formatted][data-selected] {
     background: var(--aits-cf-bg, var(--aits-color-selected-bg));
     color: var(--aits-cf-color, inherit);
+  }
+  .aits-export-note,
+  .aits-export-notice {
+    margin: 0.25rem 0.25rem 0;
+    font-size: 0.8125rem;
+  }
+  .aits-export-note {
+    color: var(--aits-color-text-muted);
+  }
+  .aits-export-notice {
+    color: var(--aits-color-danger);
   }
 }

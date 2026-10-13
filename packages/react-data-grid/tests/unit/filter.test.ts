@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { resolveColumns } from '../../src/core/columns';
-import { filterIndexes, operatorsFor } from '../../src/core/filter';
+import {
+  buildPredicate,
+  filterIndexes,
+  isConditionActive,
+  operatorNeedsValue,
+  operatorsFor,
+} from '../../src/core/filter';
 import type { FilterCondition } from '../../src/types';
 
 type Row = Record<string, unknown>;
@@ -132,7 +138,50 @@ describe('operatorsFor', () => {
   it('offers the operators from data model §7', () => {
     expect(operatorsFor('boolean', false)).toEqual(['isTrue', 'isFalse', 'isEmpty']);
     expect(operatorsFor('text', true)[0]).toBe('in');
+    expect(operatorsFor('text', false)).not.toContain('in');
+    expect(operatorsFor('enum', false)).toContain('in');
     expect(operatorsFor('date', false)).toContain('between');
     expect(operatorsFor('currency', false)).toContain('gte');
+    expect(operatorsFor('percent', false)).toContain('neq');
+    expect(operatorsFor('image', false)).toContain('contains');
+  });
+});
+
+describe('operatorNeedsValue', () => {
+  it('is false only for emptiness and boolean operators', () => {
+    expect(operatorNeedsValue('isEmpty')).toBe(false);
+    expect(operatorNeedsValue('isNotEmpty')).toBe(false);
+    expect(operatorNeedsValue('isTrue')).toBe(false);
+    expect(operatorNeedsValue('isFalse')).toBe(false);
+    expect(operatorNeedsValue('contains')).toBe(true);
+    expect(operatorNeedsValue('between')).toBe(true);
+    expect(operatorNeedsValue('in')).toBe(true);
+  });
+});
+
+describe('isConditionActive', () => {
+  it('is true only when the condition would actually filter', () => {
+    const active = { columnId: 'name', operator: 'contains' as const, value: 'ada' };
+    expect(isConditionActive(active, cols)).toBe(true);
+    expect(isConditionActive({ columnId: 'name', operator: 'contains' }, cols)).toBe(false);
+    expect(isConditionActive({ columnId: 'locked', operator: 'contains', value: 'a' }, cols)).toBe(
+      false,
+    );
+    expect(isConditionActive({ columnId: 'missing', operator: 'contains', value: 'a' }, cols)).toBe(
+      false,
+    );
+    expect(isConditionActive({ columnId: 'dept', operator: 'in', value: [] }, cols)).toBe(false);
+  });
+
+  it('treats NaN as empty and ignores a non-numeric between bound', () => {
+    const age = cols.find((c) => c.id === 'age')!;
+    expect(buildPredicate({ columnId: 'age', operator: 'isEmpty' }, age)!(Number.NaN)).toBe(true);
+    expect(buildPredicate({ columnId: 'age', operator: 'isEmpty' }, age)!(0)).toBe(false);
+    expect(
+      buildPredicate({ columnId: 'age', operator: 'between', value: 1, value2: 'nope' }, age),
+    ).toBeUndefined();
+    expect(
+      buildPredicate({ columnId: 'start', operator: 'between', value: '2020-01-01', value2: 'nope' }, cols.find((c) => c.id === 'start')!),
+    ).toBeUndefined();
   });
 });
