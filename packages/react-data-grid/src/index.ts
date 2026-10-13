@@ -26,8 +26,13 @@ export type {
   HeaderFontWeight,
   HeaderStyle,
   HeaderTextTransform,
+<<<<<<< HEAD
   TextAlignValue,
   TextAlignment,
+=======
+  ExportFormat,
+  ExportScope,
+>>>>>>> AtharvaBansari_HeaderFormatingFeature
   FilterCondition,
   FilterOperator,
   FormatFontStyle,
