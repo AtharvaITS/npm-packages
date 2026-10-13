@@ -78,6 +78,8 @@ export const FormatIcon = () => (
     <path d="M4 13h8" />
     <path d="M5.2 11.2L8 3.2l2.8 8" />
     <path d="M6.2 8.4h3.6" />
+  </svg>
+);
 export const ExportIcon = () => (
   <svg {...base}>
     <path d="M8 2.5v7M5.2 7.2L8 10l2.8-2.8" />
