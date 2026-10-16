@@ -4,7 +4,8 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, paging or virtual scrolling (100,000+ rows), selection, export, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, conditional formatting, paging or virtual scrolling (100,000+ rows), selection, export, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -16,9 +17,11 @@
 2. [Views](#views)
 3. [Data, ids and columns](#data-ids-and-columns)
 4. [Sort, search and filter](#sort-search-and-filter)
-5. [Pagination and scrolling](#pagination-and-scrolling)
+5. [Conditional formatting](#conditional-formatting)
 6. [Server (host-managed) mode](#server-host-managed-mode)
 7. [Selection and activation](#selection-and-activation)
+6. [Pagination and scrolling](#pagination-and-scrolling)
+
 8. [Export options](#export-options)
 9. [Column management and saved preferences](#column-management-and-saved-preferences)
 10. [Theming](#theming)
@@ -55,7 +58,8 @@ export function People() {
 }
 ```
 
-That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, a column chooser, export, pagination and a table/grid/list switcher.
+
+That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, conditional formatting, a column chooser, export, pagination and a table/grid/list switcher.
 
 What the zero-config defaults handle for you:
 
@@ -89,12 +93,45 @@ The component **never modifies** the array you pass.
 />
 ```
 
-Controlled view:
+Both snippets show a table, cards, or a list. The difference is **who remembers** the choice.
+
+Use `defaultView` when the grid’s own toolbar buttons are enough. You tell it the start, then it remembers by itself:
 
 ```tsx
+<ReactDataGrid data={products} defaultView="grid" />
+```
+
+1. Page opens → cards.
+2. User clicks **Table** on the grid toolbar → table.
+3. Your other code never hears about it. That is fine if nothing else on the page cares.
+
+Use `view` + `onViewChange` when a button **you** wrote, outside the grid, must switch it. Imagine this page:
+
+```text
+[ Show as cards ]          ← your button, not the grid’s
+Table                      ← a title that must match the view
+┌──────────────────────┐
+│  grid (table now)    │
+└──────────────────────┘
+```
+
+`defaultView` cannot do this. It has no handle your button can pull. Keep the choice in `view` so the button, the title, and the grid all share it:
+
+```tsx
+const [view, setView] = useState<ViewType>('table');
+
+<h2>{view === 'grid' ? 'Cards' : 'Table'}</h2>
+<button onClick={() => setView('grid')}>Show as cards</button>
+<ReactDataGrid data={products} view={view} onViewChange={setView} />
 const [view, setView] = useState<ViewType>('table');//if you use react +js remove this <ViewType>
 <ReactDataGrid data={rows} view={view} onViewChange={setView} />;
 ```
+
+1. Page opens → `view` is `'table'` → title says **Table**, grid is a table.
+2. User clicks **your** “Show as cards” button → `setView('grid')` → title says **Cards**, grid becomes cards.
+3. User then clicks **List** on the grid toolbar → `onViewChange` calls `setView('list')` → title stays in step with the grid.
+
+`onViewChange={setView}` is the line that connects the grid’s toolbar back to your `view`. Without it, step 3 snaps the grid back to table, because `view` is still `'table'`.
 
 Custom layouts keep the component's focus handling, roles and selection:
 
@@ -208,6 +245,44 @@ const columns = createColumns<Employee>([
 | boolean | `isTrue`, `isFalse`, `isEmpty` |
 
 Controlled: `sort` + `onSortChange`, `search` + `onSearchChange`, `filters` + `onFiltersChange`.
+
+---
+
+## Conditional formatting
+
+The toolbar **Format** button opens a panel to add, edit, and delete rules. A matching rule paints a cell or the whole row with a background, text color, font weight, and font style. The same rules apply in the table, grid, and list views.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  conditionalFormatting // show the Format button (default true)
+  defaultFormatRules={[
+    {
+      id: 'high',
+      columnId: 'amount',
+      operator: 'gte',
+      value: '10000',
+      scope: 'row',
+      style: { backgroundColor: '#dcfce7', fontWeight: '700' },
+    },
+  ]}
+  onFormatRulesChange={(rules) => save(rules)}
+/>
+```
+
+Hide the button and still apply rules you pass in:
+
+```tsx
+<ReactDataGrid data={rows} conditionalFormatting={false} formatRules={rules} />
+```
+
+- Operators: `equal`, `notEqual`, `contains`, `notContains`, `startsWith`, `endsWith`, `isEmpty`, `isNotEmpty`, `lt`, `lte`, `gt`, `gte`, `between`, `notBetween`.
+- `isEmpty` and `isNotEmpty` take no value. `between` and `notBetween` use `value` and `value2`.
+- Scope `cell` paints that column. Scope `row` paints the whole row.
+- Later rules override earlier ones on the same property. A cell rule overrides a row rule on that property.
+- Controlled: `formatRules` + `onFormatRulesChange`.
+
+`persistStateKey` does not save formatting rules.
 
 ---
 
@@ -330,7 +405,7 @@ In the table view, users can resize columns (drag the header edge, or Alt+←/�
 />
 ```
 
-Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns and disallowed views are ignored. Selection, search, filters and page are never saved. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
+Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns and disallowed views are ignored. Selection, search, filters, page and conditional formatting rules are never saved. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
 
 ---
 
@@ -534,6 +609,12 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `filters` / `defaultFilters` / `onFiltersChange` | `FilterCondition[]` | `[]` |
 | `filterable` | `boolean` | `true` |
 
+### Conditional formatting
+
+| Prop | Type | Default |
+|---|---|---|
+| `conditionalFormatting` | `boolean` | `true` |
+| `formatRules` / `defaultFormatRules` / `onFormatRulesChange` | `ConditionalFormatRule[]` | `[]` |
 ### Export
 
 | Prop | Type | Default |
@@ -583,7 +664,9 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 
 ### Exports
 
-`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `ExportScope`, `ExportFormat`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, 
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, 
+`ConditionalFormatRule`, `ConditionalFormatStyle`, `FormatOperator`, `FormatScope`, `FormatFontWeight`, `FormatFontStyle`,`SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `ExportScope`, `ExportFormat`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
 
 ## License
 

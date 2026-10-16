@@ -172,7 +172,43 @@ export interface Messages {
   clearSelection: string;
   pageStatus: (page: number, pageCount: number) => string;
   resizeColumn: string;
-  // Export options.
+  // Conditional formatting.
+  format: string;
+  formatTitle: string;
+  formatAdd: string;
+  formatEmpty: string;
+  formatClose: string;
+  formatEdit: string;
+  formatDelete: string;
+  formatSave: string;
+  formatCancel: string;
+  formatColumn: string;
+  formatOperator: string;
+  formatOperatorPlaceholder: string;
+  formatValue: string;
+  formatValueTo: string;
+  formatScope: string;
+  formatScopeCell: string;
+  formatScopeRow: string;
+  formatBackground: string;
+  formatText: string;
+  formatFontWeight: string;
+  formatFontStyle: string;
+  formatFont: string;
+  formatRules: string;
+  formatAddTitle: string;
+  formatEditTitle: string;
+  formatPreview: string;
+  formatUseColor: string;
+  formatOperators: Record<FormatOperator, string>;
+  formatFontWeights: Record<FormatFontWeight, string>;
+  formatFontStyles: Record<FormatFontStyle, string>;
+  formatValidationColumn: string;
+  formatValidationOperator: string;
+  formatValidationValue: string;
+  formatValidationRange: string;
+  formatValidationNumber: string;
+  formatValidationDate: string;
   exportLabel: string;
   exportTitle: string;
   exportScope: string;
@@ -190,6 +226,46 @@ export interface Messages {
   exportNoneSelected: string;
   exportServerNote: string;
   exportDone: (count: number) => string;
+}
+
+export type FormatOperator =
+  | 'equal'
+  | 'notEqual'
+  | 'isEmpty'
+  | 'isNotEmpty'
+  | 'contains'
+  | 'notContains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'between'
+  | 'notBetween'
+  | 'lt'
+  | 'lte'
+  | 'gt'
+  | 'gte';
+
+export type FormatScope = 'cell' | 'row';
+
+export type FormatFontWeight = 'default' | 'normal' | '600' | '700';
+
+export type FormatFontStyle = 'default' | 'normal' | 'italic';
+
+export interface ConditionalFormatStyle {
+  backgroundColor?: string;
+  textColor?: string;
+  fontWeight?: FormatFontWeight;
+  fontStyle?: FormatFontStyle;
+}
+
+/** One conditional formatting rule. Later rules override earlier ones on the same property. Cell scope overrides row scope. */
+export interface ConditionalFormatRule {
+  id: string;
+  columnId: string;
+  operator: FormatOperator;
+  value?: string;
+  value2?: string;
+  scope: FormatScope;
+  style: ConditionalFormatStyle;
 }
 
 /** Which rows an export includes. */
@@ -321,6 +397,12 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   onFiltersChange?: (filters: FilterCondition[]) => void;
   filterable?: boolean;
 
+  // ---- Conditional formatting -------------------------------------------
+  /** Shows the Format button. Set false to hide it. Provided rules still apply. */
+  conditionalFormatting?: boolean;
+  formatRules?: ConditionalFormatRule[];
+  defaultFormatRules?: ConditionalFormatRule[];
+  onFormatRulesChange?: (rules: ConditionalFormatRule[]) => void;
   // ---- Export -----------------------------------------------------------
   /** Shows the Export button. Set false to hide it. */
   exportable?: boolean;

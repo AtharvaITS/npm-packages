@@ -1,3 +1,4 @@
+import { FormatButton } from '../conditional/FormatButton';
 import { ExportButton } from '../export/ExportButton';
 import { useGrid } from '../state/GridContext';
 import { ColumnsButton } from './ColumnsButton';
@@ -25,6 +26,7 @@ export function Toolbar() {
         </div>
         <div className="aits-toolbar-end">
           {showSort && <SortMenu />}
+          {props.conditionalFormatting !== false && <FormatButton />}
           {props.exportable !== false && <ExportButton />}
           <ColumnsButton />
           {showSwitcher && <ViewSwitcher />}

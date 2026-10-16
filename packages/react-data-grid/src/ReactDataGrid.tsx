@@ -42,6 +42,8 @@ import {
 } from './state/GridContext';
 import { useGridState } from './state/useGridState';
 import { useIsomorphicLayoutEffect } from './state/useIsomorphicLayoutEffect';
+import { ConditionalFormatProvider } from './conditional/FormatContext';
+import { useControllableState } from './state/useControllableState';
 import { usePersistence } from './state/usePersistence';
 import { useServerData } from './state/useServerData';
 import { EmptyState } from './states/EmptyState';
@@ -49,13 +51,14 @@ import { ErrorState } from './states/ErrorState';
 import { LoadingOverlay } from './states/LoadingOverlay';
 import { NoResultsState } from './states/NoResultsState';
 import { Toolbar } from './toolbar/Toolbar';
-import type { ReactDataGridProps, Density, RowId, ThemeToken } from './types';
+import type { ReactDataGridProps, ConditionalFormatRule, Density, RowId, ThemeToken } from './types';
 import { GridView } from './views/grid/GridView';
 import { ListView } from './views/list/ListView';
 import { TableView } from './views/table/TableView';
 
 const ROW_HEIGHTS: Record<Density, number> = { compact: 32, standard: 40, comfortable: 52 };
 const EMPTY_IDS: RowId[] = [];
+const EMPTY_FORMAT_RULES: ConditionalFormatRule[] = [];
 
 function tokenToVar(token: string) {
   return '--aits-' + token.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
@@ -93,6 +96,11 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   // ---- State ---------------------------------------------------------------
   const api = useGridState(props, { warnKey });
   const { state } = api;
+  const [formatRules, setFormatRules] = useControllableState<ConditionalFormatRule[]>({
+    value: props.formatRules,
+    defaultValue: props.defaultFormatRules ?? EMPTY_FORMAT_RULES,
+    onChange: props.onFormatRulesChange,
+  });
   const server = useServerData(
     props,
     {
@@ -524,16 +532,18 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
       style={rootStyle}
     >
       <GridContext.Provider value={ctx as GridContextValue}>
-        {showToolbar && <Toolbar />}
-        {error !== undefined && error !== null && error !== false && (
-          <ErrorState error={error} retry={server.retry} />
-        )}
-        <div className="aits-body" data-loading={loading || undefined}>
-          {content}
-          {loading && hasRows && <LoadingOverlay skeleton={false} />}
-        </div>
-        {showPagination && <Pagination />}
-        <LiveRegion message={liveMessage} />
+        <ConditionalFormatProvider rules={formatRules} setRules={setFormatRules}>
+          {showToolbar && <Toolbar />}
+          {error !== undefined && error !== null && error !== false && (
+            <ErrorState error={error} retry={server.retry} />
+          )}
+          <div className="aits-body" data-loading={loading || undefined}>
+            {content}
+            {loading && hasRows && <LoadingOverlay skeleton={false} />}
+          </div>
+          {showPagination && <Pagination />}
+          <LiveRegion message={liveMessage} />
+        </ConditionalFormatProvider>
       </GridContext.Provider>
     </div>
   );

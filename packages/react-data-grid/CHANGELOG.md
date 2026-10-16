@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.5
+
+### Patch Changes
+
+- "implement conditional formating feature"
+
 ## 1.0.4
 
 ### Patch Changes

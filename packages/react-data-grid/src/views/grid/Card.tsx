@@ -1,6 +1,7 @@
 import { memo, type MouseEvent } from 'react';
 import { POS_COL, POS_ROW } from '../../a11y/useRovingFocus';
 import type { EffectiveColumn } from '../../core/columnState';
+import { useConditionalFormats } from '../../conditional/FormatContext';
 import { useGrid } from '../../state/GridContext';
 import { CellEditor, openCellEditor } from '../CellEditor';
 import {
@@ -31,7 +32,10 @@ export const Card = memo(function Card({
 }: CardProps) {
   const itemProps = { [POS_ROW]: focusRow, [POS_COL]: focusCol, tabIndex: tabbable ? 0 : -1 };
   const ctx = useGrid();
+  const formats = useConditionalFormats(rowIndex);
   const { selection, titleColumn, imageColumn } = ctx;
+  const imageFormat = imageColumn ? formats.cellStyle(imageColumn.id) : undefined;
+  const titleFormat = titleColumn ? formats.cellStyle(titleColumn.id) : undefined;
   const id = ctx.rowIds[rowIndex]!;
   const editingColumnId = ctx.editing?.rowId === id ? ctx.editing.columnId : null;
   const hasSelect = selection.mode !== 'none';
@@ -65,6 +69,8 @@ export const Card = memo(function Card({
           (imageEditing && imageColumn ? (
             <div
               className="aits-card-media"
+              style={imageFormat}
+              data-formatted={imageFormat ? true : undefined}
               onDoubleClick={(event) =>
                 openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
               }
@@ -72,10 +78,14 @@ export const Card = memo(function Card({
               <CellEditor column={imageColumn} value={image.value} formatted={image.formatted} />
             </div>
           ) : image.custom ? (
-            <div className="aits-card-media">{image.content}</div>
+            <div className="aits-card-media" style={imageFormat} data-formatted={imageFormat ? true : undefined}>
+              {image.content}
+            </div>
           ) : isSafeImageSrc(image.value) ? (
             <div
               className="aits-card-media"
+              style={imageFormat}
+              data-formatted={imageFormat ? true : undefined}
               onDoubleClick={(event) =>
                 imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
               }
@@ -86,6 +96,8 @@ export const Card = memo(function Card({
             <div
               className="aits-card-media aits-card-media-empty"
               aria-hidden="true"
+              style={imageFormat}
+              data-formatted={imageFormat ? true : undefined}
               onDoubleClick={(event) =>
                 imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
               }
@@ -95,6 +107,8 @@ export const Card = memo(function Card({
           {title && (
             <div
               className="aits-card-title"
+              style={titleFormat}
+              data-formatted={titleFormat ? true : undefined}
               title={titleEditing || title.custom ? undefined : title.formatted}
               onDoubleClick={(event) =>
                 titleColumn && openCellEditor(event, ctx.startEdit, rowIndex, titleColumn.id)
@@ -112,8 +126,15 @@ export const Card = memo(function Card({
               {fieldColumns.map((column) => {
                 const parts = getCellParts(ctx, rowIndex, column, 'grid');
                 const fieldEditing = editingColumnId === column.id;
+                const fieldFormat = formats.cellStyle(column.id);
                 return (
-                  <div className="aits-card-field" key={column.id} data-type={column.type}>
+                  <div
+                    className="aits-card-field"
+                    key={column.id}
+                    data-type={column.type}
+                    style={fieldFormat}
+                    data-formatted={fieldFormat ? true : undefined}
+                  >
                     <dt>{column.header}</dt>
                     <dd
                       title={
@@ -151,7 +172,9 @@ export const Card = memo(function Card({
       aria-selected={hasSelect ? selected : undefined}
       aria-disabled={hasSelect && !selectable ? true : undefined}
       data-selected={selected || undefined}
+      data-formatted={formats.rowStyle ? true : undefined}
       data-row-id={id}
+      style={formats.rowStyle}
       onClick={onClick}
       {...itemProps}
     >
