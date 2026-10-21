@@ -219,6 +219,23 @@ export interface Messages {
   headerStyleApply: string;
   headerStyleFontWeights: Record<HeaderFontWeight, string>;
   headerStyleTransforms: Record<HeaderTextTransform, string>;
+  exportLabel: string;
+  exportTitle: string;
+  exportScope: string;
+  exportScopeView: string;
+  exportScopeAll: string;
+  exportScopePage: string;
+  exportScopeSelected: string;
+  exportFormat: string;
+  exportFormatCsv: string;
+  exportFormatExcel: string;
+  exportFormatPdf: string;
+  exportAction: string;
+  exportCancel: string;
+  exportEmpty: string;
+  exportNoneSelected: string;
+  exportServerNote: string;
+  exportDone: (count: number) => string;
 }
 
 export type FormatOperator =
@@ -273,24 +290,6 @@ export interface ConditionalFormatRule {
   value2?: string;
   scope: FormatScope;
   style: ConditionalFormatStyle;
-  // Export options.
-  exportLabel: string;
-  exportTitle: string;
-  exportScope: string;
-  exportScopeView: string;
-  exportScopeAll: string;
-  exportScopePage: string;
-  exportScopeSelected: string;
-  exportFormat: string;
-  exportFormatCsv: string;
-  exportFormatExcel: string;
-  exportFormatPdf: string;
-  exportAction: string;
-  exportCancel: string;
-  exportEmpty: string;
-  exportNoneSelected: string;
-  exportServerNote: string;
-  exportDone: (count: number) => string;
 }
 
 /** Which rows an export includes. */
