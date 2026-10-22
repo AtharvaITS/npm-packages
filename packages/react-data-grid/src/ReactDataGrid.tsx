@@ -43,6 +43,7 @@ import {
 import { useGridState } from './state/useGridState';
 import { useIsomorphicLayoutEffect } from './state/useIsomorphicLayoutEffect';
 import { ConditionalFormatProvider } from './conditional/FormatContext';
+import { EMPTY_HEADER_STYLE } from './conditional/headerStyle';
 import { useControllableState } from './state/useControllableState';
 import { usePersistence } from './state/usePersistence';
 import { useServerData } from './state/useServerData';
@@ -51,7 +52,14 @@ import { ErrorState } from './states/ErrorState';
 import { LoadingOverlay } from './states/LoadingOverlay';
 import { NoResultsState } from './states/NoResultsState';
 import { Toolbar } from './toolbar/Toolbar';
-import type { ReactDataGridProps, ConditionalFormatRule, Density, RowId, ThemeToken } from './types';
+import type {
+  ReactDataGridProps,
+  ConditionalFormatRule,
+  Density,
+  HeaderStyle,
+  RowId,
+  ThemeToken,
+} from './types';
 import { GridView } from './views/grid/GridView';
 import { ListView } from './views/list/ListView';
 import { TableView } from './views/table/TableView';
@@ -96,10 +104,17 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   // ---- State ---------------------------------------------------------------
   const api = useGridState(props, { warnKey });
   const { state } = api;
-  const [formatRules, setFormatRules] = useControllableState<ConditionalFormatRule[]>({
+  const [formatRules, setFormatRules, formatRulesControlled] = useControllableState<
+    ConditionalFormatRule[]
+  >({
     value: props.formatRules,
     defaultValue: props.defaultFormatRules ?? EMPTY_FORMAT_RULES,
     onChange: props.onFormatRulesChange,
+  });
+  const [headerStyle, setHeaderStyle, headerStyleControlled] = useControllableState<HeaderStyle>({
+    value: props.headerStyle,
+    defaultValue: props.defaultHeaderStyle ?? EMPTY_HEADER_STYLE,
+    onChange: props.onHeaderStyleChange,
   });
   const server = useServerData(
     props,
@@ -135,7 +150,14 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     [columnsSource, rows, warnKey],
   );
   const columnIds = useMemo(() => resolved.map((c) => c.id), [resolved]);
-  usePersistence(props.persistStateKey, api, columnIds);
+  usePersistence(props.persistStateKey, api, columnIds, {
+    rules: formatRules,
+    setRules: setFormatRules,
+    rulesControlled: formatRulesControlled,
+    headerStyle,
+    setHeaderStyle,
+    headerStyleControlled,
+  });
 
   const effective = useMemo(
     () => applyColumnState(resolved, state.columnState),
@@ -532,7 +554,12 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
       style={rootStyle}
     >
       <GridContext.Provider value={ctx as GridContextValue}>
-        <ConditionalFormatProvider rules={formatRules} setRules={setFormatRules}>
+        <ConditionalFormatProvider
+          rules={formatRules}
+          setRules={setFormatRules}
+          headerStyle={headerStyle}
+          setHeaderStyle={setHeaderStyle}
+        >
           {showToolbar && <Toolbar />}
           {error !== undefined && error !== null && error !== false && (
             <ErrorState error={error} retry={server.retry} />

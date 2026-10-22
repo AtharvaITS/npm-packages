@@ -240,38 +240,54 @@ export function RuleEditor({
   );
 }
 
-function ColorField({
+export function ColorField({
   label,
   applyLabel,
   value,
   fallback,
   onChange,
+  showValue = false,
+  freeSelect = false,
 }: {
   label: string;
   applyLabel: string;
   value: string;
   fallback: string;
   onChange(value: string): void;
+  showValue?: boolean;
+  /** Header style: the picker stays usable whether or not the checkbox is checked. */
+  freeSelect?: boolean;
 }) {
+  const [toggled, setToggled] = useState(value !== '');
   const enabled = value !== '';
+  const shown = enabled ? value : fallback;
+  const checked = freeSelect ? toggled : enabled;
   return (
     <div className="aits-format-color">
       <label>
         <input
           type="checkbox"
-          checked={enabled}
+          checked={checked}
           aria-label={`${applyLabel} ${label}`}
-          onChange={(event) => onChange(event.target.checked ? fallback : '')}
+          onChange={(event) => {
+            if (freeSelect) {
+              setToggled(event.target.checked);
+              if (event.target.checked && !enabled) onChange(fallback);
+              return;
+            }
+            onChange(event.target.checked ? fallback : '');
+          }}
         />
         <span>{label}</span>
       </label>
       <input
         type="color"
         aria-label={label}
-        disabled={!enabled}
-        value={enabled ? value : fallback}
+        disabled={freeSelect ? false : !enabled}
+        value={shown}
         onChange={(event) => onChange(event.target.value)}
       />
+      {showValue && (freeSelect || enabled) && <span className="aits-format-color-value">{shown}</span>}
     </div>
   );
 }
