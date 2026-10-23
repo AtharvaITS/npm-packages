@@ -19,9 +19,11 @@ const rect = (x: number, y: number, w: number, h: number) =>
 function Harness({
   onClose = () => {},
   alignEnd = true,
+  centered = false,
 }: {
   onClose?(): void;
   alignEnd?: boolean;
+  centered?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   return (
@@ -35,6 +37,7 @@ function Harness({
         anchorRef={ref}
         label="Menu"
         alignEnd={alignEnd}
+        centered={centered}
         items={[{ label: 'One', onSelect() {} }]}
       />
     </>
@@ -107,6 +110,13 @@ describe('anchored popover placement', () => {
     anchorRect = rect(990, 100, 26, 26);
     render(<Harness alignEnd={false} />);
     expect(menu().style.left).toBe('816px'); // 1000 − 176 − 8
+  });
+
+  it('centers in the viewport when centered is set', () => {
+    anchorRect = rect(500, 100, 26, 26);
+    render(<Harness centered />);
+    expect(menu().style.left).toBe('412px'); // (1000 − 176) / 2
+    expect(menu().style.top).toBe('350px'); // (800 − 100) / 2
   });
 
   it('flips above the anchor when there is no room below', () => {

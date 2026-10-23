@@ -1,6 +1,7 @@
 import { memo, type MouseEvent } from 'react';
 import { POS_COL, POS_ROW } from '../../a11y/useRovingFocus';
 import type { EffectiveColumn } from '../../core/columnState';
+import { useConditionalFormats } from '../../conditional/FormatContext';
 import { useGrid } from '../../state/GridContext';
 import { CellEditor, openCellEditor } from '../CellEditor';
 import {
@@ -35,7 +36,11 @@ export const ListItem = memo(function ListItem({
 }: ListItemProps) {
   const itemProps = { [POS_ROW]: focusRow, [POS_COL]: 0, tabIndex: tabbable ? 0 : -1 };
   const ctx = useGrid();
+  const formats = useConditionalFormats(rowIndex);
   const { selection, titleColumn, subtitleColumn, imageColumn } = ctx;
+  const imageFormat = imageColumn ? formats.cellStyle(imageColumn.id) : undefined;
+  const titleFormat = titleColumn ? formats.cellStyle(titleColumn.id) : undefined;
+  const subtitleFormat = subtitleColumn ? formats.cellStyle(subtitleColumn.id) : undefined;
   const id = ctx.rowIds[rowIndex]!;
   const editingColumnId = ctx.editing?.rowId === id ? ctx.editing.columnId : null;
   const hasSelect = selection.mode !== 'none';
@@ -71,11 +76,13 @@ export const ListItem = memo(function ListItem({
       <>
         {image &&
           (imageEditing && imageColumn ? (
-            <span className="aits-list-media">
+            <span className="aits-list-media" style={imageFormat} data-formatted={imageFormat ? true : undefined}>
               <CellEditor column={imageColumn} value={image.value} formatted={image.formatted} />
             </span>
           ) : image.custom ? (
-            <span className="aits-list-media">{image.content}</span>
+            <span className="aits-list-media" style={imageFormat} data-formatted={imageFormat ? true : undefined}>
+              {image.content}
+            </span>
           ) : isSafeImageSrc(image.value) ? (
             <img
               className="aits-list-media"
@@ -83,6 +90,8 @@ export const ListItem = memo(function ListItem({
               alt=""
               loading="lazy"
               decoding="async"
+              style={imageFormat}
+              data-formatted={imageFormat ? true : undefined}
               onDoubleClick={(event) =>
                 imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
               }
@@ -91,6 +100,8 @@ export const ListItem = memo(function ListItem({
             <span
               className="aits-list-media aits-list-media-empty"
               aria-hidden="true"
+              style={imageFormat}
+              data-formatted={imageFormat ? true : undefined}
               onDoubleClick={(event) =>
                 imageColumn && openCellEditor(event, ctx.startEdit, rowIndex, imageColumn.id)
               }
@@ -99,6 +110,8 @@ export const ListItem = memo(function ListItem({
         <div className="aits-list-text">
           <div
             className="aits-list-primary"
+            style={titleFormat}
+            data-formatted={titleFormat ? true : undefined}
             title={title && !titleEditing && !title.custom ? title.formatted : undefined}
             onDoubleClick={(event) =>
               titleColumn && openCellEditor(event, ctx.startEdit, rowIndex, titleColumn.id)
@@ -113,6 +126,8 @@ export const ListItem = memo(function ListItem({
           {subtitle && (
             <div
               className="aits-list-secondary"
+              style={subtitleFormat}
+              data-formatted={subtitleFormat ? true : undefined}
               title={subtitleEditing || subtitle.custom ? undefined : subtitle.formatted}
               onDoubleClick={(event) =>
                 subtitleColumn && openCellEditor(event, ctx.startEdit, rowIndex, subtitleColumn.id)
@@ -134,10 +149,13 @@ export const ListItem = memo(function ListItem({
               {fieldColumns.map((column) => {
                 const parts = getCellParts(ctx, rowIndex, column, 'list');
                 const fieldEditing = editingColumnId === column.id;
+                const fieldFormat = formats.cellStyle(column.id);
                 return (
                   <span
                     className="aits-list-meta-item"
                     key={column.id}
+                    style={fieldFormat}
+                    data-formatted={fieldFormat ? true : undefined}
                     onDoubleClick={(event) =>
                       openCellEditor(event, ctx.startEdit, rowIndex, column.id)
                     }
@@ -167,7 +185,9 @@ export const ListItem = memo(function ListItem({
       aria-posinset={position}
       aria-setsize={setSize}
       data-selected={selected || undefined}
+      data-formatted={formats.rowStyle ? true : undefined}
       data-row-id={id}
+      style={formats.rowStyle}
       onClick={onClick}
       onContextMenu={(event) =>
         handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)

@@ -1,4 +1,6 @@
 import type { CSSProperties, MouseEvent } from 'react';
+import { useConditionalFormat } from '../../conditional/FormatContext';
+import { textAlignmentCellStyle } from '../../conditional/textAlignment';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
 import { CellEditor, isCellEditing, openCellEditor } from '../CellEditor';
@@ -10,11 +12,15 @@ export interface CellProps {
   ariaColIndex: number;
   itemProps: Record<string, unknown>;
   style?: CSSProperties;
+  /** Conditional formatting for this cell. Omitted when no rule matches. */
+  formatStyle?: CSSProperties;
 }
 
 /** One table cell. Values render as text nodes (never HTML) unless `render` is supplied (FR-006). */
-export function Cell({ rowIndex, column, ariaColIndex, itemProps, style }: CellProps) {
+export function Cell({ rowIndex, column, ariaColIndex, itemProps, style, formatStyle }: CellProps) {
   const ctx = useGrid();
+  const { textAlignment } = useConditionalFormat();
+  const alignStyle = textAlignmentCellStyle(textAlignment);
   const parts = getCellParts(ctx, rowIndex, column, 'table');
   const editing = isCellEditing(ctx.editing, ctx.rowIds[rowIndex], column.id);
   const onDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -28,6 +34,7 @@ export function Cell({ rowIndex, column, ariaColIndex, itemProps, style }: CellP
       data-align={column.align}
       data-type={column.type}
       data-pinned={column.pinned ?? undefined}
+      data-formatted={formatStyle ? true : undefined}
       title={
         editing
           ? undefined
@@ -35,7 +42,9 @@ export function Cell({ rowIndex, column, ariaColIndex, itemProps, style }: CellP
             ? parts.formatted
             : undefined
       }
-      style={style}
+      style={
+        alignStyle || formatStyle ? { ...style, ...formatStyle, ...alignStyle } : style
+      }
       onDoubleClick={onDoubleClick}
       {...itemProps}
     >

@@ -1,12 +1,43 @@
-import type { ColumnStateItem, SortItem, ViewType } from '../types';
+import { isFormatOperator, operatorValueCount } from '../conditional/evaluate';
+import { isHeaderFontWeight, isHeaderTextTransform } from '../conditional/headerStyle';
+import { isTextAlignValue } from '../conditional/textAlignment';
+import type {
+  ColumnStateItem,
+  ConditionalFormatRule,
+  ConditionalFormatStyle,
+  FormatFontStyle,
+  FormatFontWeight,
+  HeaderStyle,
+  SortItem,
+  TextAlignment,
+  ViewType,
+} from '../types';
 
-/** What preference-saving stores (data model §11). Selection, search, filters and page are never saved. */
+/**
+ * What preference-saving stores.
+ * Selection, search, filters and page are never saved.
+ * Formatting rules, header style and text alignment are saved with the other preferences.
+ */
 export interface PersistedState {
   view?: ViewType;
   sort?: SortItem[];
   pageSize?: number;
   columns?: ColumnStateItem[];
+  formatRules?: ConditionalFormatRule[];
+  headerStyle?: HeaderStyle;
+  textAlignment?: TextAlignment;
 }
+
+/** Fields written on every save. Empty rules, header style and text alignment record a delete. */
+export type PersistedWrite = {
+  view: ViewType;
+  sort: SortItem[];
+  pageSize: number;
+  columns: ColumnStateItem[];
+  formatRules: ConditionalFormatRule[];
+  headerStyle: HeaderStyle;
+  textAlignment: TextAlignment;
+};
 
 export const STORAGE_PREFIX = '@atharvaits/react-data-grid:';
 const VERSION = 1;
@@ -64,6 +95,93 @@ export function clearPersisted(persistKey: string): void {
 }
 
 const VIEWS: ViewType[] = ['table', 'grid', 'list'];
+const RULE_FONT_WEIGHTS: readonly FormatFontWeight[] = ['default', 'normal', '600', '700'];
+const RULE_FONT_STYLES: readonly FormatFontStyle[] = ['default', 'normal', 'italic'];
+
+function isRuleFontWeight(value: string): value is FormatFontWeight {
+  return (RULE_FONT_WEIGHTS as readonly string[]).includes(value);
+}
+
+function isRuleFontStyle(value: string): value is FormatFontStyle {
+  return (RULE_FONT_STYLES as readonly string[]).includes(value);
+}
+
+function parseFormatStyle(raw: unknown): ConditionalFormatStyle {
+  if (!raw || typeof raw !== 'object') return {};
+  const source = raw as Record<string, unknown>;
+  const style: ConditionalFormatStyle = {};
+  if (typeof source.backgroundColor === 'string' && source.backgroundColor) {
+    style.backgroundColor = source.backgroundColor;
+  }
+  if (typeof source.textColor === 'string' && source.textColor) style.textColor = source.textColor;
+  if (typeof source.fontWeight === 'string' && isRuleFontWeight(source.fontWeight)) {
+    style.fontWeight = source.fontWeight;
+  }
+  if (typeof source.fontStyle === 'string' && isRuleFontStyle(source.fontStyle)) {
+    style.fontStyle = source.fontStyle;
+  }
+  return style;
+}
+
+function parseFormatRule(raw: unknown, ids: ReadonlySet<string>): ConditionalFormatRule | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const source = raw as Record<string, unknown>;
+  if (typeof source.id !== 'string' || source.id.length === 0) return undefined;
+  if (typeof source.columnId !== 'string' || !ids.has(source.columnId)) return undefined;
+  if (typeof source.operator !== 'string' || !isFormatOperator(source.operator)) return undefined;
+  if (source.scope !== 'cell' && source.scope !== 'row') return undefined;
+  const count = operatorValueCount(source.operator);
+  if (count >= 1 && typeof source.value !== 'string') return undefined;
+  if (count === 2 && typeof source.value2 !== 'string') return undefined;
+  const rule: ConditionalFormatRule = {
+    id: source.id,
+    columnId: source.columnId,
+    operator: source.operator,
+    scope: source.scope,
+    style: parseFormatStyle(source.style),
+  };
+  if (count >= 1 && typeof source.value === 'string') rule.value = source.value;
+  if (count === 2 && typeof source.value2 === 'string') rule.value2 = source.value2;
+  return rule;
+}
+
+function parseHeaderStyle(raw: unknown): HeaderStyle | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const source = raw as Record<string, unknown>;
+  const style: HeaderStyle = {};
+  if (typeof source.backgroundColor === 'string' && source.backgroundColor) {
+    style.backgroundColor = source.backgroundColor;
+  }
+  if (typeof source.textColor === 'string' && source.textColor) style.textColor = source.textColor;
+  if (typeof source.fontSize === 'number' && Number.isFinite(source.fontSize) && source.fontSize > 0) {
+    style.fontSize = source.fontSize;
+  }
+  if (
+    typeof source.fontWeight === 'string' &&
+    isHeaderFontWeight(source.fontWeight) &&
+    source.fontWeight !== 'default'
+  ) {
+    style.fontWeight = source.fontWeight;
+  }
+  if (
+    typeof source.textTransform === 'string' &&
+    isHeaderTextTransform(source.textTransform) &&
+    source.textTransform !== 'default'
+  ) {
+    style.textTransform = source.textTransform;
+  }
+  return style;
+}
+
+function parseTextAlignment(raw: unknown): TextAlignment | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const source = raw as Record<string, unknown>;
+  const alignment: TextAlignment = {};
+  if (typeof source.alignment === 'string' && isTextAlignValue(source.alignment)) {
+    alignment.alignment = source.alignment;
+  }
+  return alignment;
+}
 
 function isSortItem(x: unknown): x is SortItem {
   return (
@@ -120,10 +238,24 @@ export function readPersisted(
         return item;
       });
   }
+  if (Array.isArray(parsed.formatRules)) {
+    result.formatRules = parsed.formatRules.flatMap((rule: unknown) => {
+      const parsedRule = parseFormatRule(rule, ids);
+      return parsedRule ? [parsedRule] : [];
+    });
+  }
+  if (parsed.headerStyle !== undefined) {
+    const style = parseHeaderStyle(parsed.headerStyle);
+    if (style !== undefined) result.headerStyle = style;
+  }
+  if (parsed.textAlignment !== undefined) {
+    const alignment = parseTextAlignment(parsed.textAlignment);
+    if (alignment !== undefined) result.textAlignment = alignment;
+  }
   return result;
 }
 
-export function writePersisted(persistKey: string, state: Required<PersistedState>): void {
+export function writePersisted(persistKey: string, state: PersistedWrite): void {
   if (typeof window === 'undefined') return;
   const payload = {
     v: VERSION,
@@ -131,6 +263,9 @@ export function writePersisted(persistKey: string, state: Required<PersistedStat
     sort: state.sort,
     pageSize: state.pageSize,
     columns: state.columns,
+    formatRules: state.formatRules,
+    headerStyle: state.headerStyle,
+    textAlignment: state.textAlignment,
   };
   try {
     writeRaw(STORAGE_PREFIX + persistKey, JSON.stringify(payload));
@@ -142,7 +277,7 @@ export function writePersisted(persistKey: string, state: Required<PersistedStat
 /** Debounced writer (300 ms). */
 export function createPersister(delay = 300) {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let pending: { key: string; state: Required<PersistedState> } | undefined;
+  let pending: { key: string; state: PersistedWrite } | undefined;
   const flush = () => {
     if (timer) clearTimeout(timer);
     timer = undefined;
@@ -150,7 +285,7 @@ export function createPersister(delay = 300) {
     pending = undefined;
   };
   return {
-    schedule(key: string, state: Required<PersistedState>) {
+    schedule(key: string, state: PersistedWrite) {
       pending = { key, state };
       if (timer) clearTimeout(timer);
       timer = setTimeout(flush, delay);

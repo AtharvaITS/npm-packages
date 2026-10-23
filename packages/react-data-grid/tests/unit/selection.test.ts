@@ -31,7 +31,10 @@ describe('selection rules', () => {
     expect(selectRange(order, 'c', 'd')).toEqual(['c', 'a', 'd']);
     expect(selectRange(order, 'd', 'c', (id) => id !== 'a')).toEqual(['c', 'd']);
     expect(selectRange(order, null, 'd')).toEqual(['d']);
+    expect(selectRange(order, 'c', 'missing')).toEqual([]);
+    expect(selectRange(order, 'missing', 'd', (id) => id !== 'd')).toEqual([]);
     expect(addRange(['x', 'c'], ['c', 'a'])).toEqual(['x', 'c', 'a']);
+    expect(addRange(['a'], [])).toEqual(['a']);
   });
 
   it('select all covers every selectable id in the filtered result', () => {

@@ -42,6 +42,10 @@ import {
 } from './state/GridContext';
 import { useGridState } from './state/useGridState';
 import { useIsomorphicLayoutEffect } from './state/useIsomorphicLayoutEffect';
+import { ConditionalFormatProvider } from './conditional/FormatContext';
+import { EMPTY_HEADER_STYLE } from './conditional/headerStyle';
+import { EMPTY_TEXT_ALIGNMENT } from './conditional/textAlignment';
+import { useControllableState } from './state/useControllableState';
 import { usePersistence } from './state/usePersistence';
 import { useServerData } from './state/useServerData';
 import { EmptyState } from './states/EmptyState';
@@ -51,12 +55,22 @@ import { NoResultsState } from './states/NoResultsState';
 import { Toolbar } from './toolbar/Toolbar';
 import type { ReactDataGridProps, Density, RowId, ThemeToken } from './types';
 import { RowActions, type RowDialogState, type RowMenuState } from './views/RowActions';
+import type {
+  ReactDataGridProps,
+  ConditionalFormatRule,
+  Density,
+  HeaderStyle,
+  RowId,
+  TextAlignment,
+  ThemeToken,
+} from './types';
 import { GridView } from './views/grid/GridView';
 import { ListView } from './views/list/ListView';
 import { TableView } from './views/table/TableView';
 
 const ROW_HEIGHTS: Record<Density, number> = { compact: 32, standard: 40, comfortable: 52 };
 const EMPTY_IDS: RowId[] = [];
+const EMPTY_FORMAT_RULES: ConditionalFormatRule[] = [];
 
 function tokenToVar(token: string) {
   return '--aits-' + token.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
@@ -94,6 +108,23 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   // ---- State ---------------------------------------------------------------
   const api = useGridState(props, { warnKey });
   const { state } = api;
+  const [formatRules, setFormatRules, formatRulesControlled] = useControllableState<
+    ConditionalFormatRule[]
+  >({
+    value: props.formatRules,
+    defaultValue: props.defaultFormatRules ?? EMPTY_FORMAT_RULES,
+    onChange: props.onFormatRulesChange,
+  });
+  const [headerStyle, setHeaderStyle, headerStyleControlled] = useControllableState<HeaderStyle>({
+    value: props.headerStyle,
+    defaultValue: props.defaultHeaderStyle ?? EMPTY_HEADER_STYLE,
+    onChange: props.onHeaderStyleChange,
+  });
+  const [textAlignment, setTextAlignment, textAlignmentControlled] = useControllableState<TextAlignment>({
+    value: props.textAlignment,
+    defaultValue: props.defaultTextAlignment ?? EMPTY_TEXT_ALIGNMENT,
+    onChange: props.onTextAlignmentChange,
+  });
   const server = useServerData(
     props,
     {
@@ -128,7 +159,17 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     [columnsSource, rows, warnKey],
   );
   const columnIds = useMemo(() => resolved.map((c) => c.id), [resolved]);
-  usePersistence(props.persistStateKey, api, columnIds);
+  usePersistence(props.persistStateKey, api, columnIds, {
+    rules: formatRules,
+    setRules: setFormatRules,
+    rulesControlled: formatRulesControlled,
+    headerStyle,
+    setHeaderStyle,
+    headerStyleControlled,
+    textAlignment,
+    setTextAlignment,
+    textAlignmentControlled,
+  });
 
   const effective = useMemo(
     () => applyColumnState(resolved, state.columnState),
@@ -572,6 +613,25 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
           />
         )}
         <LiveRegion message={liveMessage} />
+        <ConditionalFormatProvider
+          rules={formatRules}
+          setRules={setFormatRules}
+          headerStyle={headerStyle}
+          setHeaderStyle={setHeaderStyle}
+          textAlignment={textAlignment}
+          setTextAlignment={setTextAlignment}
+        >
+          {showToolbar && <Toolbar />}
+          {error !== undefined && error !== null && error !== false && (
+            <ErrorState error={error} retry={server.retry} />
+          )}
+          <div className="aits-body" data-loading={loading || undefined}>
+            {content}
+            {loading && hasRows && <LoadingOverlay skeleton={false} />}
+          </div>
+          {showPagination && <Pagination />}
+          <LiveRegion message={liveMessage} />
+        </ConditionalFormatProvider>
       </GridContext.Provider>
     </div>
   );

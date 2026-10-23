@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useRovingFocus, type Position } from '../../a11y/useRovingFocus';
+import { useConditionalFormat } from '../../conditional/FormatContext';
+import { headerStyleToCss } from '../../conditional/headerStyle';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
 import { useIsomorphicLayoutEffect } from '../../state/useIsomorphicLayoutEffect';
@@ -17,7 +19,9 @@ const KEYBOARD_RESIZE_STEP = 10;
 /** Table view: ARIA grid with sticky header, pinned columns and optional virtualization. */
 export function TableView() {
   const ctx = useGrid();
+  const { headerStyle, textAlignment } = useConditionalFormat();
   const { visibleColumns, displayIndexes, selection, columnActions, messages, rtl } = ctx;
+  const headerCss = useMemo(() => headerStyleToCss(headerStyle), [headerStyle]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -243,6 +247,7 @@ export function TableView() {
       aria-multiselectable={selection.mode === 'multi' ? true : undefined}
       aria-busy={ctx.loading || undefined}
       data-scroll={scroll || undefined}
+      data-text-align={textAlignment.alignment || undefined}
       style={containerStyle}
       onKeyDown={roving.onKeyDown}
       onFocus={roving.onFocus}
@@ -252,7 +257,7 @@ export function TableView() {
         style={{ '--aits-cols': layout.template, width: layout.totalWidth } as CSSProperties}
       >
         <div role="rowgroup" className="aits-thead" ref={headerRef}>
-          <div role="row" className="aits-row aits-header-row" aria-rowindex={1}>
+          <div role="row" className="aits-row aits-header-row" aria-rowindex={1} style={headerCss}>
             {hasSelect && (
               <div
                 role="columnheader"

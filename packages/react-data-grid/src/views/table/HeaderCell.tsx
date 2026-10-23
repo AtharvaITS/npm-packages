@@ -1,4 +1,10 @@
 import { useRef, type CSSProperties, type DragEvent, type PointerEvent } from 'react';
+import { useConditionalFormat } from '../../conditional/FormatContext';
+import { headerLabelStyle } from '../../conditional/headerStyle';
+import {
+  textAlignmentCellStyle,
+  textAlignmentHeaderContentStyle,
+} from '../../conditional/textAlignment';
 import type { EffectiveColumn } from '../../core/columnState';
 import { useGrid } from '../../state/GridContext';
 import { MoreIcon, SortAscIcon, SortDescIcon, SortNoneIcon } from '../icons';
@@ -37,6 +43,9 @@ export function HeaderCell({
   dragging,
 }: HeaderCellProps) {
   const ctx = useGrid();
+  const { headerStyle, textAlignment } = useConditionalFormat();
+  const alignStyle = textAlignmentCellStyle(textAlignment);
+  const headerContentStyle = textAlignmentHeaderContentStyle(textAlignment);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sortIndex = ctx.api.state.sort.findIndex((s) => s.columnId === column.id);
   const sortItem = sortIndex >= 0 ? ctx.api.state.sort[sortIndex] : undefined;
@@ -50,7 +59,11 @@ export function HeaderCell({
   const showMenu = hasColumnMenu(column, ctx);
   const multi = ctx.api.state.sort.length > 1;
 
-  const label = <span className="aits-header-label">{column.header}</span>;
+  const label = (
+    <span className="aits-header-label" style={headerLabelStyle(headerStyle)}>
+      {column.header}
+    </span>
+  );
   return (
     <div
       role="columnheader"
@@ -63,7 +76,7 @@ export function HeaderCell({
       data-dragging={dragging || undefined}
       data-column-id={column.id}
       title={column.header}
-      style={style}
+      style={alignStyle ? { ...style, ...alignStyle } : style}
       {...itemProps}
       {...dragProps}
     >
@@ -72,6 +85,7 @@ export function HeaderCell({
           type="button"
           tabIndex={-1}
           className="aits-sort-button"
+          style={headerContentStyle}
           onClick={(e) => ctx.api.toggleSort(column.id, e.shiftKey)}
         >
           {label}
@@ -89,7 +103,9 @@ export function HeaderCell({
           </span>
         </button>
       ) : (
-        <span className="aits-header-static">{label}</span>
+        <span className="aits-header-static" style={headerContentStyle}>
+          {label}
+        </span>
       )}
       {showMenu && (
         <button

@@ -71,6 +71,8 @@ export interface PopoverProps {
    * Used so a second right-click can move the menu instead of dismissing it first.
    */
   keepOnRightClick?: boolean;
+  /** Place the dialog in the center of the viewport instead of beside the anchor. */
+  centered?: boolean;
 }
 
 /**
@@ -89,6 +91,7 @@ export function Popover({
   point,
   excludeAnchor,
   keepOnRightClick,
+  centered,
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -133,6 +136,25 @@ export function Popover({
     el.style.left = `${left - origin.left}px`;
     el.style.visibility = 'visible';
   }, [anchorRef, alignEnd, pointX, pointY]);
+    const rtl = getComputedStyle(anchor).direction === 'rtl';
+    let left = centered
+      ? (vw - width) / 2
+      : alignEnd !== rtl
+        ? rect.right - width
+        : rect.left;
+    left = Math.max(MARGIN, Math.min(left, vw - width - MARGIN));
+    let top = centered ? (vh - height) / 2 : rect.bottom + GAP;
+    if (
+      !centered &&
+      top + height > vh - MARGIN &&
+      rect.top - height - GAP > MARGIN
+    )
+      top = rect.top - height - GAP;
+    top = Math.max(MARGIN, Math.min(top, vh - height - MARGIN));
+    el.style.top = `${top - origin.top}px`;
+    el.style.left = `${left - origin.left}px`;
+    el.style.visibility = 'visible';
+  }, [anchorRef, alignEnd, centered]);
 
   // Promote to the top layer (when supported) before measuring, so the popover
   // escapes clipping ancestors and is measured against the viewport.
