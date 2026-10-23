@@ -35,4 +35,16 @@ describe('mergeMessages', () => {
     expect(merged.headerStyleTransforms.lowercase).toBe(defaultMessages.headerStyleTransforms.lowercase);
     expect(merged.headerStyleApply).toBe(defaultMessages.headerStyleApply);
   });
+
+  it('merges text alignment labels and keeps the rest of the built-in map', () => {
+    const merged = mergeMessages({
+      textAlignment: 'Alignement',
+      textAlignments: { center: 'Centré' } as Messages['textAlignments'],
+    });
+    expect(merged.textAlignment).toBe('Alignement');
+    expect(merged.textAlignments.center).toBe('Centré');
+    expect(merged.textAlignments.left).toBe(defaultMessages.textAlignments.left);
+    expect(merged.textAlignments.right).toBe(defaultMessages.textAlignments.right);
+    expect(merged.textAlignmentApply).toBe(defaultMessages.textAlignmentApply);
+  });
 });

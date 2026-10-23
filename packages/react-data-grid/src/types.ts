@@ -219,6 +219,10 @@ export interface Messages {
   headerStyleApply: string;
   headerStyleFontWeights: Record<HeaderFontWeight, string>;
   headerStyleTransforms: Record<HeaderTextTransform, string>;
+  textAlignment: string;
+  textAlignmentApply: string;
+  textAlignments: Record<TextAlignValue, string>;
+  // Export options.
   exportLabel: string;
   exportTitle: string;
   exportScope: string;
@@ -272,6 +276,17 @@ export interface HeaderStyle {
   fontSize?: number;
   fontWeight?: HeaderFontWeight;
   textTransform?: HeaderTextTransform;
+}
+
+/** One alignment for the whole table. Only one value is active. */
+export type TextAlignValue = 'left' | 'center' | 'right';
+
+/**
+ * Global text alignment for header cells and every data cell.
+ * An empty object keeps each column's own alignment.
+ */
+export interface TextAlignment {
+  alignment?: TextAlignValue;
 }
 
 export interface ConditionalFormatStyle {
@@ -430,6 +445,9 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   headerStyle?: HeaderStyle;
   defaultHeaderStyle?: HeaderStyle;
   onHeaderStyleChange?: (style: HeaderStyle) => void;
+  textAlignment?: TextAlignment;
+  defaultTextAlignment?: TextAlignment;
+  onTextAlignmentChange?: (alignment: TextAlignment) => void;
   // ---- Export -----------------------------------------------------------
   /** Shows the Export button. Set false to hide it. */
   exportable?: boolean;

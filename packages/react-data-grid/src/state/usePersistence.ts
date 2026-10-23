@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { createPersister, readPersisted } from '../core/persist';
-import type { ConditionalFormatRule, HeaderStyle } from '../types';
+import type { ConditionalFormatRule, HeaderStyle, TextAlignment } from '../types';
 import type { SetState } from './useControllableState';
 import type { GridStateApi } from './useGridState';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
@@ -13,12 +13,15 @@ export interface FormatPersistence {
   headerStyle: HeaderStyle;
   setHeaderStyle: SetState<HeaderStyle>;
   headerStyleControlled: boolean;
+  textAlignment: TextAlignment;
+  setTextAlignment: SetState<TextAlignment>;
+  textAlignmentControlled: boolean;
 }
 
 /**
  * Preference saving (FR-039, research R13). Restores once per key after mount
  * (never during server rendering, so hydration matches) and saves changes to
- * view, sort, page size, column layout, formatting rules and header style,
+ * view, sort, page size, column layout, formatting rules, header style and text alignment,
  * debounced by 300 ms.
  */
 export function usePersistence(
@@ -30,10 +33,10 @@ export function usePersistence(
   const restoredKey = useRef<string | undefined>(undefined);
   const persister = useMemo(() => createPersister(300), []);
   const { view, sort, pageSize, columnState } = api.state;
-  const { rules, headerStyle } = format;
+  const { rules, headerStyle, textAlignment } = format;
   const hasColumns = columnIds.length > 0;
-  const latest = useRef({ view, sort, pageSize, columnState, rules, headerStyle });
-  latest.current = { view, sort, pageSize, columnState, rules, headerStyle };
+  const latest = useRef({ view, sort, pageSize, columnState, rules, headerStyle, textAlignment });
+  latest.current = { view, sort, pageSize, columnState, rules, headerStyle, textAlignment };
 
   useIsomorphicLayoutEffect(() => {
     if (!persistKey || restoredKey.current === persistKey || !hasColumns) return;
@@ -46,6 +49,9 @@ export function usePersistence(
     }
     if (saved.headerStyle !== undefined && !format.headerStyleControlled) {
       format.setHeaderStyle(saved.headerStyle, { silent: true });
+    }
+    if (saved.textAlignment !== undefined && !format.textAlignmentControlled) {
+      format.setTextAlignment(saved.textAlignment, { silent: true });
     }
     // Restore once per key, as soon as columns are known.
   }, [persistKey, hasColumns]);
@@ -60,8 +66,9 @@ export function usePersistence(
       columns: current.columnState,
       formatRules: current.rules,
       headerStyle: current.headerStyle,
+      textAlignment: current.textAlignment,
     });
-  }, [persistKey, persister, view, sort, pageSize, columnState, rules, headerStyle]);
+  }, [persistKey, persister, view, sort, pageSize, columnState, rules, headerStyle, textAlignment]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

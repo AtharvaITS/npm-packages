@@ -1,24 +1,35 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearPersisted, readPersisted, STORAGE_PREFIX, writePersisted } from '../../src/core/persist';
-import type { ConditionalFormatRule, GridState, HeaderStyle } from '../../src/types';
+import {
+  clearPersisted,
+  readPersisted,
+  STORAGE_PREFIX,
+  writePersisted,
+  type PersistedWrite,
+} from '../../src/core/persist';
+import type { GridState } from '../../src/types';
 import type { GridStateApi } from '../../src/state/useGridState';
 import { usePersistence, type FormatPersistence } from '../../src/state/usePersistence';
 
 const allowed = { columnIds: ['name'], views: ['table', 'grid', 'list'] as const };
-const persistedExtras = {
-  formatRules: [] as ConditionalFormatRule[],
-  headerStyle: {} as HeaderStyle,
-};
+
+const savedFormat = {
+  formatRules: [],
+  headerStyle: {},
+  textAlignment: {},
+} satisfies Pick<PersistedWrite, 'formatRules' | 'headerStyle' | 'textAlignment'>;
 
 function formatApi(): FormatPersistence {
   return {
     rules: [],
-    setRules() {},
+    setRules: vi.fn(),
     rulesControlled: false,
     headerStyle: {},
-    setHeaderStyle() {},
+    setHeaderStyle: vi.fn(),
     headerStyleControlled: false,
+    textAlignment: {},
+    setTextAlignment: vi.fn(),
+    textAlignmentControlled: false,
   };
 }
 
@@ -65,7 +76,7 @@ describe('usePersistence', () => {
       sort: [{ columnId: 'name', direction: 'asc' }],
       pageSize: 50,
       columns: [{ id: 'name', order: 0 }],
-      ...persistedExtras,
+      ...savedFormat,
     });
     const restore = vi.fn();
     const { rerender } = renderHook(
@@ -80,13 +91,7 @@ describe('usePersistence', () => {
     rerender({ key: 'orders', columns: ['name'] });
     expect(restore).toHaveBeenCalledTimes(1);
 
-    writePersisted('people', {
-      view: 'list',
-      sort: [],
-      pageSize: 10,
-      columns: [],
-      ...persistedExtras,
-    });
+    writePersisted('people', { view: 'list', sort: [], pageSize: 10, columns: [], ...savedFormat });
     rerender({ key: 'people', columns: ['name'] });
     expect(restore).toHaveBeenCalledTimes(2);
     expect(restore.mock.calls[1]![0].view).toBe('list');
@@ -103,12 +108,7 @@ describe('usePersistence', () => {
   it('debounces saves and flushes them on unmount', () => {
     const { rerender, unmount } = renderHook(
       ({ view }: { view: GridState['view'] }) =>
-        usePersistence(
-          'orders',
-          api({ view, pageSize: 25, sort: [], columnState: [] }),
-          ['name'],
-          formatApi(),
-        ),
+        usePersistence('orders', api({ view, pageSize: 25, sort: [], columnState: [] }), ['name'], formatApi()),
       { initialProps: { view: 'table' as GridState['view'] } },
     );
     act(() => vi.advanceTimersByTime(300));

@@ -19,7 +19,7 @@ const KEYBOARD_RESIZE_STEP = 10;
 /** Table view: ARIA grid with sticky header, pinned columns and optional virtualization. */
 export function TableView() {
   const ctx = useGrid();
-  const { headerStyle } = useConditionalFormat();
+  const { headerStyle, textAlignment } = useConditionalFormat();
   const { visibleColumns, displayIndexes, selection, columnActions, messages, rtl } = ctx;
   const headerCss = useMemo(() => headerStyleToCss(headerStyle), [headerStyle]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -247,6 +247,7 @@ export function TableView() {
       aria-multiselectable={selection.mode === 'multi' ? true : undefined}
       aria-busy={ctx.loading || undefined}
       data-scroll={scroll || undefined}
+      data-text-align={textAlignment.alignment || undefined}
       style={containerStyle}
       onKeyDown={roving.onKeyDown}
       onFocus={roving.onFocus}
