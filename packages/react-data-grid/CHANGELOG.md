@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.7
+
+### Patch Changes
+
+- implement text allignment
+
 ## 1.0.6
 
 ### Patch Changes
