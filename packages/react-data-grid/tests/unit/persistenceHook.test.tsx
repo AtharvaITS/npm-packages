@@ -8,27 +8,10 @@ import {
   type PersistedWrite,
 } from '../../src/core/persist';
 import type { GridState } from '../../src/types';
-// import { clearPersisted, readPersisted, STORAGE_PREFIX, writePersisted } from '../../src/core/persist';
-import type { ConditionalFormatRule, GridState, HeaderStyle } from '../../src/types';
 import type { GridStateApi } from '../../src/state/useGridState';
 import { usePersistence, type FormatPersistence } from '../../src/state/usePersistence';
 
 const allowed = { columnIds: ['name'], views: ['table', 'grid', 'list'] as const };
-const persistedExtras = {
-  formatRules: [] as ConditionalFormatRule[],
-  headerStyle: {} as HeaderStyle,
-};
-
-function formatApi(): FormatPersistence {
-  return {
-    rules: [],
-    setRules() {},
-    rulesControlled: false,
-    headerStyle: {},
-    setHeaderStyle() {},
-    headerStyleControlled: false,
-  };
-}
 
 const savedFormat = {
   formatRules: [],
@@ -93,11 +76,7 @@ describe('usePersistence', () => {
       sort: [{ columnId: 'name', direction: 'asc' }],
       pageSize: 50,
       columns: [{ id: 'name', order: 0 }],
-<<<<<<< HEAD
       ...savedFormat,
-=======
-      ...persistedExtras,
->>>>>>> main
     });
     const restore = vi.fn();
     const { rerender } = renderHook(
@@ -112,17 +91,7 @@ describe('usePersistence', () => {
     rerender({ key: 'orders', columns: ['name'] });
     expect(restore).toHaveBeenCalledTimes(1);
 
-<<<<<<< HEAD
     writePersisted('people', { view: 'list', sort: [], pageSize: 10, columns: [], ...savedFormat });
-=======
-    writePersisted('people', {
-      view: 'list',
-      sort: [],
-      pageSize: 10,
-      columns: [],
-      ...persistedExtras,
-    });
->>>>>>> main
     rerender({ key: 'people', columns: ['name'] });
     expect(restore).toHaveBeenCalledTimes(2);
     expect(restore.mock.calls[1]![0].view).toBe('list');
@@ -139,16 +108,7 @@ describe('usePersistence', () => {
   it('debounces saves and flushes them on unmount', () => {
     const { rerender, unmount } = renderHook(
       ({ view }: { view: GridState['view'] }) =>
-<<<<<<< HEAD
         usePersistence('orders', api({ view, pageSize: 25, sort: [], columnState: [] }), ['name'], formatApi()),
-=======
-        usePersistence(
-          'orders',
-          api({ view, pageSize: 25, sort: [], columnState: [] }),
-          ['name'],
-          formatApi(),
-        ),
->>>>>>> main
       { initialProps: { view: 'table' as GridState['view'] } },
     );
     act(() => vi.advanceTimersByTime(300));
