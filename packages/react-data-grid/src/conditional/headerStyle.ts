@@ -3,13 +3,7 @@ import type { HeaderFontWeight, HeaderStyle, HeaderTextTransform } from '../type
 
 export const EMPTY_HEADER_STYLE: HeaderStyle = {};
 
-export const HEADER_FONT_WEIGHTS: readonly HeaderFontWeight[] = [
-  'default',
-  'normal',
-  '500',
-  '600',
-  '700',
-];
+export const HEADER_FONT_WEIGHTS: readonly HeaderFontWeight[] = ['default', 'italic', 'bold'];
 
 export const HEADER_TEXT_TRANSFORMS: readonly HeaderTextTransform[] = [
   'default',
@@ -35,6 +29,13 @@ export function isHeaderFontWeight(value: string): value is HeaderFontWeight {
   return FONT_WEIGHT_SET.has(value);
 }
 
+/** Keeps italic and bold. Older numeric weights 600 and 700 become bold. */
+export function readHeaderFontWeight(value: string): HeaderFontWeight | undefined {
+  if (value === 'bold' || value === '600' || value === '700') return 'bold';
+  if (value === 'italic') return 'italic';
+  return undefined;
+}
+
 export function isHeaderTextTransform(value: string): value is HeaderTextTransform {
   return TEXT_TRANSFORM_SET.has(value);
 }
@@ -44,7 +45,7 @@ export function headerStyleToDraft(style: HeaderStyle | undefined): HeaderStyleD
     backgroundColor: style?.backgroundColor ?? '',
     textColor: style?.textColor ?? '',
     fontSize: style?.fontSize !== undefined ? String(style.fontSize) : '',
-    fontWeight: style?.fontWeight ?? 'default',
+    fontWeight: (style?.fontWeight && readHeaderFontWeight(style.fontWeight)) || 'default',
     textTransform: style?.textTransform ?? 'default',
   };
 }
@@ -72,25 +73,26 @@ export function draftToHeaderStyle(
   return { ok: true, style: Object.keys(style).length === 0 ? EMPTY_HEADER_STYLE : style };
 }
 
-function fontWeightCss(weight: HeaderFontWeight | undefined): CSSProperties['fontWeight'] | undefined {
+function fontFaceCss(weight: HeaderFontWeight | undefined): CSSProperties | undefined {
   switch (weight) {
     case undefined:
     case 'default':
       return undefined;
-    case 'normal':
-      return 'normal';
-    case '500':
-      return '500';
-    case '600':
-      return '600';
-    case '700':
-      return '700';
+    case 'italic':
+      return { fontWeight: 400, fontStyle: 'italic' };
+    case 'bold':
+      return { fontWeight: 700, fontStyle: 'normal' };
     default: {
       const exhaustive: never = weight;
       void exhaustive;
       return undefined;
     }
   }
+}
+
+/** Popup preview. Default, italic, and bold each paint a different face. */
+export function headerWeightPreview(weight: HeaderFontWeight): CSSProperties {
+  return fontFaceCss(weight) ?? { fontWeight: 400, fontStyle: 'normal' };
 }
 
 function textTransformCss(
@@ -127,8 +129,7 @@ export function headerStyleToCss(style: HeaderStyle | undefined): CSSProperties 
   if (style.fontSize !== undefined && Number.isFinite(style.fontSize) && style.fontSize > 0) {
     css.fontSize = `${style.fontSize}px`;
   }
-  const fontWeight = fontWeightCss(style.fontWeight);
-  if (fontWeight !== undefined) css.fontWeight = fontWeight;
+  Object.assign(css, fontFaceCss(style.fontWeight ? readHeaderFontWeight(style.fontWeight) : undefined));
   const textTransform = textTransformCss(style.textTransform);
   if (textTransform !== undefined) {
     css.textTransform = textTransform;
@@ -137,11 +138,14 @@ export function headerStyleToCss(style: HeaderStyle | undefined): CSSProperties 
   return Object.keys(css).length > 0 ? css : undefined;
 }
 
-/** Applied on the header label so a parent button cannot reset the transform. */
+/** Applied on the header label so a parent button cannot reset the face or transform. */
 export function headerLabelStyle(style: HeaderStyle | undefined): CSSProperties | undefined {
   const textTransform = textTransformCss(style?.textTransform);
-  if (!textTransform) return undefined;
-  return { textTransform };
+  const face = fontFaceCss(style?.fontWeight ? readHeaderFontWeight(style.fontWeight) : undefined);
+  if (!textTransform && !face) return undefined;
+  const css: CSSProperties = { ...face };
+  if (textTransform) css.textTransform = textTransform;
+  return css;
 }
 
 export function describeHeaderStyle(
@@ -163,8 +167,9 @@ export function describeHeaderStyle(
   if (style.fontSize !== undefined && style.fontSize > 0) {
     details.push(`${labels.fontSize}: ${style.fontSize}${labels.fontSizeUnit}`);
   }
-  if (style.fontWeight && style.fontWeight !== 'default') {
-    details.push(`${labels.fontWeight}: ${labels.weights[style.fontWeight]}`);
+  const fontWeight = style.fontWeight ? readHeaderFontWeight(style.fontWeight) : undefined;
+  if (fontWeight) {
+    details.push(`${labels.fontWeight}: ${labels.weights[fontWeight]}`);
   }
   if (style.textTransform && style.textTransform !== 'default') {
     details.push(`${labels.textTransform}: ${labels.transforms[style.textTransform]}`);

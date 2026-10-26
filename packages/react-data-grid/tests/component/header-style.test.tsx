@@ -49,9 +49,19 @@ describe('header style', () => {
     fireEvent.change(within(editor).getByRole('spinbutton', { name: 'Font Size' }), {
       target: { value: '14' },
     });
-    fireEvent.change(within(editor).getByRole('combobox', { name: 'Font Weight' }), {
-      target: { value: '700' },
+    expect(within(editor).getByRole('radio', { name: 'Default' }).closest('label')).toHaveStyle({
+      fontWeight: '400',
+      fontStyle: 'normal',
     });
+    expect(within(editor).getByRole('radio', { name: 'Italic' }).closest('label')).toHaveStyle({
+      fontWeight: '400',
+      fontStyle: 'italic',
+    });
+    expect(within(editor).getByRole('radio', { name: 'Bold' }).closest('label')).toHaveStyle({
+      fontWeight: '700',
+      fontStyle: 'normal',
+    });
+    fireEvent.click(within(editor).getByRole('radio', { name: 'Bold' }));
     fireEvent.change(within(editor).getByRole('combobox', { name: 'Text Transform' }), {
       target: { value: 'uppercase' },
     });
@@ -124,15 +134,13 @@ describe('header style', () => {
       <ReactDataGrid
         data={rows}
         columns={columns}
-        defaultHeaderStyle={{ backgroundColor: '#112233', fontWeight: '700' }}
+        defaultHeaderStyle={{ backgroundColor: '#112233', fontWeight: 'bold' }}
       />,
     );
     expect(headerRow().style.backgroundColor).toBe('rgb(17, 34, 51)');
     const editor = openHeaderStyle();
     setColor(editor, 'Background Color', '#ff0000');
-    fireEvent.change(within(editor).getByRole('combobox', { name: 'Font Weight' }), {
-      target: { value: 'normal' },
-    });
+    fireEvent.click(within(editor).getByRole('radio', { name: 'Italic' }));
     fireEvent.click(within(editor).getByRole('button', { name: 'Cancel' }));
 
     expect(screen.queryByRole('dialog', { name: 'Header Style' })).toBeNull();
@@ -142,7 +150,7 @@ describe('header style', () => {
     const list = screen.getByRole('dialog', { name: 'Conditional Formatting' });
     fireEvent.click(within(list).getByRole('button', { name: 'Header Style' }));
     const restored = screen.getByRole('dialog', { name: 'Header Style' });
-    expect(within(restored).getByRole('combobox', { name: 'Font Weight' })).toHaveValue('700');
+    expect(within(restored).getByRole('radio', { name: 'Bold' })).toBeChecked();
     expect(within(restored).getByRole('checkbox', { name: 'Apply Background Color' })).toBeChecked();
   });
 
@@ -151,7 +159,7 @@ describe('header style', () => {
       <ReactDataGrid
         data={rows}
         columns={columns}
-        defaultHeaderStyle={{ textTransform: 'uppercase', fontWeight: '700' }}
+        defaultHeaderStyle={{ textTransform: 'uppercase', fontWeight: 'bold' }}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Format' }));

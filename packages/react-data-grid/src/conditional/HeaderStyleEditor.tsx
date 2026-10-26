@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useId, useState, type RefObject } from 'react';
 import { useGrid } from '../state/GridContext';
 import { Popover } from '../toolbar/Popover';
 import type { HeaderStyle } from '../types';
@@ -7,7 +7,7 @@ import {
   HEADER_TEXT_TRANSFORMS,
   draftToHeaderStyle,
   headerStyleToDraft,
-  isHeaderFontWeight,
+  headerWeightPreview,
   isHeaderTextTransform,
   type HeaderStyleDraft,
   type HeaderStyleError,
@@ -29,6 +29,7 @@ export function HeaderStyleEditor({
   onApply(style: HeaderStyle): void;
 }) {
   const { messages } = useGrid();
+  const weightName = useId();
   const [draft, setDraft] = useState<HeaderStyleDraft>(() => headerStyleToDraft(initial));
   const [error, setError] = useState<HeaderStyleError | null>(null);
 
@@ -65,7 +66,7 @@ export function HeaderStyleEditor({
       anchorRef={anchorRef}
       label={messages.headerStyle}
       className="aits-format-editor"
-      centered
+      alignEnd
     >
       <div className="aits-popover-title">{messages.headerStyle}</div>
       <fieldset className="aits-export-fieldset">
@@ -103,24 +104,22 @@ export function HeaderStyleEditor({
             <span>{messages.headerStyleFontSizeUnit}</span>
           </span>
         </label>
-        <label className="aits-format-field">
+        <div className="aits-format-field aits-format-weights">
           <span>{messages.headerStyleFontWeight}</span>
-          <select
-            className="aits-input"
-            aria-label={messages.headerStyleFontWeight}
-            value={draft.fontWeight}
-            onChange={(event) => {
-              const value = event.target.value;
-              if (isHeaderFontWeight(value)) patch({ fontWeight: value });
-            }}
-          >
+          <div className="aits-format-weight-list" role="radiogroup" aria-label={messages.headerStyleFontWeight}>
             {HEADER_FONT_WEIGHTS.map((weight) => (
-              <option key={weight} value={weight}>
-                {messages.headerStyleFontWeights[weight]}
-              </option>
+              <label key={weight} className="aits-enum-option" style={headerWeightPreview(weight)}>
+                <input
+                  type="radio"
+                  name={weightName}
+                  checked={draft.fontWeight === weight}
+                  onChange={() => patch({ fontWeight: weight })}
+                />
+                <span>{messages.headerStyleFontWeights[weight]}</span>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+        </div>
         <label className="aits-format-field">
           <span>{messages.headerStyleTextTransform}</span>
           <select

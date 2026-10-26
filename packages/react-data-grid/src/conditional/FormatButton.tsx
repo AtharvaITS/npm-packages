@@ -100,7 +100,7 @@ export function FormatButton() {
         anchorRef={button}
         label={messages.formatTitle}
         className="aits-format-panel"
-        centered
+        alignEnd
       >
         <div className="aits-popover-title">{messages.formatTitle}</div>
         <div className="aits-popover-actions">

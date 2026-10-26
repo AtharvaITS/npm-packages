@@ -56,6 +56,10 @@ export interface ColumnStateItem {
   width?: number;
   hidden?: boolean;
   pinned?: 'start' | 'end' | null;
+  /**
+   * 1-based column number. `1` is the first column and `5` is the fifth.
+   * `0` and negative numbers are ignored, so that column stays where the column list defined it.
+   */
   order: number;
 }
 
@@ -274,10 +278,10 @@ export type FormatScope = 'cell' | 'row';
 
 export type FormatFontWeight = 'default' | 'normal' | '600' | '700';
 
-export type FormatFontStyle = 'default' | 'normal' | 'italic';
+export type FormatFontStyle = 'default' | 'bold' | 'italic';
 
-/** Header font weight. Medium is 500; 600 and 700 match conditional formatting. */
-export type HeaderFontWeight = 'default' | 'normal' | '500' | '600' | '700';
+/** Header font weight. Italic and bold are the only applied faces. */
+export type HeaderFontWeight = 'default' | 'italic' | 'bold';
 
 export type HeaderTextTransform = 'default' | 'uppercase' | 'lowercase' | 'capitalize';
 

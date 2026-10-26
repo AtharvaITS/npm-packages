@@ -25,12 +25,12 @@ describe('mergeMessages', () => {
   it('merges header formatting labels and keeps the rest of the built-in maps', () => {
     const merged = mergeMessages({
       headerStyle: 'En-tête',
-      headerStyleFontWeights: { '700': 'Gras' } as Messages['headerStyleFontWeights'],
+      headerStyleFontWeights: { bold: 'Gras' } as Messages['headerStyleFontWeights'],
       headerStyleTransforms: { uppercase: 'Majuscules' } as Messages['headerStyleTransforms'],
     });
     expect(merged.headerStyle).toBe('En-tête');
-    expect(merged.headerStyleFontWeights['700']).toBe('Gras');
-    expect(merged.headerStyleFontWeights.normal).toBe(defaultMessages.headerStyleFontWeights.normal);
+    expect(merged.headerStyleFontWeights.bold).toBe('Gras');
+    expect(merged.headerStyleFontWeights.italic).toBe(defaultMessages.headerStyleFontWeights.italic);
     expect(merged.headerStyleTransforms.uppercase).toBe('Majuscules');
     expect(merged.headerStyleTransforms.lowercase).toBe(defaultMessages.headerStyleTransforms.lowercase);
     expect(merged.headerStyleApply).toBe(defaultMessages.headerStyleApply);

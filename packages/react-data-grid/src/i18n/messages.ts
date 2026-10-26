@@ -57,16 +57,14 @@ const formatFontWeights: Record<FormatFontWeight, string> = {
 
 const formatFontStyles: Record<FormatFontStyle, string> = {
   default: 'Default',
-  normal: 'Normal',
+  bold: 'Bold',
   italic: 'Italic',
 };
 
 const headerStyleFontWeights: Record<HeaderFontWeight, string> = {
   default: 'Default',
-  normal: 'Normal',
-  '500': 'Medium',
-  '600': 'Semi Bold',
-  '700': 'Bold',
+  italic: 'Italic',
+  bold: 'Bold',
 };
 
 const headerStyleTransforms: Record<HeaderTextTransform, string> = {

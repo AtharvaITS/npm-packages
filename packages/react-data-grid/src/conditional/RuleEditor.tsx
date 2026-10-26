@@ -1,4 +1,4 @@
-import { useId, useState, type RefObject } from 'react';
+import { useId, useState, type CSSProperties, type RefObject } from 'react';
 import { useGrid } from '../state/GridContext';
 import { Popover } from '../toolbar/Popover';
 import type {
@@ -21,7 +21,13 @@ import {
 } from './evaluate';
 
 const FONT_WEIGHTS: FormatFontWeight[] = ['default', 'normal', '600', '700'];
-const FONT_STYLES: FormatFontStyle[] = ['default', 'normal', 'italic'];
+const FONT_STYLES: FormatFontStyle[] = ['default', 'bold', 'italic'];
+
+function fontStyleCss(fontStyle: FormatFontStyle): CSSProperties {
+  if (fontStyle === 'bold') return { fontWeight: 700, fontStyle: 'normal' };
+  if (fontStyle === 'italic') return { fontWeight: 400, fontStyle: 'italic' };
+  return { fontWeight: 400, fontStyle: 'normal' };
+}
 const DEFAULT_BACKGROUND = '#fff3bf';
 const DEFAULT_TEXT = '#1a1a1a';
 
@@ -102,7 +108,7 @@ export function RuleEditor({
       anchorRef={anchorRef}
       label={title}
       className="aits-format-editor"
-      centered
+      alignEnd
     >
       <div className="aits-popover-title">{title}</div>
       <fieldset className="aits-export-fieldset">
@@ -213,10 +219,11 @@ export function RuleEditor({
             className="aits-input"
             aria-label={messages.formatFontStyle}
             value={draft.fontStyle}
+            style={fontStyleCss(draft.fontStyle)}
             onChange={(event) => patch({ fontStyle: event.target.value as FormatFontStyle })}
           >
             {FONT_STYLES.map((fontStyle) => (
-              <option key={fontStyle} value={fontStyle}>
+              <option key={fontStyle} value={fontStyle} style={fontStyleCss(fontStyle)}>
                 {messages.formatFontStyles[fontStyle]}
               </option>
             ))}

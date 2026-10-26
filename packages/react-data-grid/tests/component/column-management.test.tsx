@@ -90,16 +90,42 @@ describe('US7: manage columns and remember preferences', () => {
         data={rows}
         defaultView="list"
         defaultColumnState={[
-          { id: 'city', order: 0 },
-          { id: 'name', order: 1 },
-          { id: 'role', order: 2, hidden: true },
-          { id: 'id', order: 3, hidden: true },
+          { id: 'city', order: 1 },
+          { id: 'name', order: 2 },
+          { id: 'role', order: 3, hidden: true },
+          { id: 'id', order: 4, hidden: true },
         ]}
       />,
     );
     const item = container.querySelector('.aits-list-item')!;
     expect(item.querySelector('.aits-list-primary')!.textContent).toBe('London');
     expect(item.textContent).not.toContain('Math');
+  });
+
+  it('places defaultColumnState by column number, starting at 1', () => {
+    const columns = [{ field: 'name' }, { field: 'role' }, { field: 'city' }];
+    const first = render(
+      <ReactDataGrid data={rows} columns={columns} defaultColumnState={[{ id: 'city', order: 1 }]} />,
+    );
+    expect(headerTitles()).toEqual(['City', 'Name', 'Role']);
+    first.unmount();
+
+    const second = render(
+      <ReactDataGrid data={rows} columns={columns} defaultColumnState={[{ id: 'city', order: 2 }]} />,
+    );
+    expect(headerTitles()).toEqual(['Name', 'City', 'Role']);
+    second.unmount();
+
+    const zero = render(
+      <ReactDataGrid data={rows} columns={columns} defaultColumnState={[{ id: 'city', order: 0 }]} />,
+    );
+    expect(headerTitles()).toEqual(['Name', 'Role', 'City']);
+    zero.unmount();
+
+    render(
+      <ReactDataGrid data={rows} columns={columns} defaultColumnState={[{ id: 'city', order: -2 }]} />,
+    );
+    expect(headerTitles()).toEqual(['Name', 'Role', 'City']);
   });
 
   it('pins columns with sticky positioning (scenario 3)', () => {

@@ -297,7 +297,7 @@ Hide the button and still apply rules you pass in:
     backgroundColor: '#1e293b',
     textColor: '#ffffff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
   }}
   onHeaderStyleChange={(style) => save(style)}
@@ -306,7 +306,7 @@ Hide the button and still apply rules you pass in:
 
 - Background and text color can be picked whether or not the checkbox is checked. A chosen color is applied in either case. Leave a color unset to keep the current header color.
 - `fontSize` is a number of pixels. Leave it unset to keep the current size. Zero and negative values are rejected.
-- `fontWeight`: `default`, `normal`, `500` (Medium), `600` (Semi Bold), `700` (Bold). `default` keeps the current header weight.
+- `fontWeight`: `default`, `italic`, `bold`. `default` keeps the current header weight. A saved `600` or `700` is read as `bold`.
 - `textTransform`: `default`, `uppercase`, `lowercase`, `capitalize`. `default` keeps the current text. The column header string itself does not change.
 - Controlled: `headerStyle` + `onHeaderStyleChange`.
 - `conditionalFormatting={false}` hides the Format button. A `headerStyle` you pass in still applies.

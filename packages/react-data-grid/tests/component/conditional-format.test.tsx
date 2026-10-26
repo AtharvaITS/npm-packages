@@ -56,11 +56,26 @@ describe('conditional formatting', () => {
     render(<ReactDataGrid data={rows} columns={columns} getRowId="id" locale="en-US" />);
     fireEvent.click(screen.getByRole('button', { name: 'Format' }));
     const list = screen.getByRole('dialog', { name: 'Conditional Formatting' });
+    expect(list.style.position).toBe('fixed');
+    expect(list.style.top).toBe('4px');
     expect(within(list).getByText('No conditional formatting rules added.')).toBeInTheDocument();
 
     fireEvent.click(within(list).getByRole('button', { name: 'Add rule' }));
     expect(screen.queryByRole('dialog', { name: 'Conditional Formatting' })).toBeNull();
     const editor = screen.getByRole('dialog', { name: 'Add rule' });
+    expect(editor.style.top).toBe('4px');
+    const fontStyle = within(editor).getByRole('combobox', { name: 'Font style' });
+    expect(Array.from(fontStyle.querySelectorAll('option')).map((option) => option.textContent)).toEqual([
+      'Default',
+      'Bold',
+      'Italic',
+    ]);
+    expect(fontStyle).toHaveStyle({ fontWeight: '400', fontStyle: 'normal' });
+    fireEvent.change(fontStyle, { target: { value: 'bold' } });
+    expect(fontStyle).toHaveStyle({ fontWeight: '700', fontStyle: 'normal' });
+    fireEvent.change(fontStyle, { target: { value: 'italic' } });
+    expect(fontStyle).toHaveStyle({ fontWeight: '400', fontStyle: 'italic' });
+    fireEvent.change(fontStyle, { target: { value: 'default' } });
     fireEvent.click(within(editor).getByRole('button', { name: 'Save' }));
     expect(within(editor).getByRole('alert')).toHaveTextContent('Select a column.');
 
@@ -346,5 +361,42 @@ describe('conditional formatting', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
     expect(screen.getByRole('dialog', { name: 'Filter' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Format/ })).toHaveTextContent('2');
+  });
+
+  it('paints bold and italic differently from the default font style', () => {
+    render(
+      <ReactDataGrid
+        data={rows}
+        columns={columns}
+        getRowId="id"
+        defaultFormatRules={[
+          rule({
+            id: 'bold',
+            columnId: 'status',
+            operator: 'equal',
+            value: 'Active',
+            scope: 'cell',
+            style: { fontStyle: 'bold' },
+          }),
+          rule({
+            id: 'italic',
+            columnId: 'name',
+            operator: 'equal',
+            value: 'Bea',
+            scope: 'cell',
+            style: { fontStyle: 'italic' },
+          }),
+        ]}
+      />,
+    );
+    const active = cellOf('Ada', 'Active');
+    expect(active.style.fontWeight).toBe('700');
+    expect(active.style.fontStyle).toBe('');
+    const bea = cellOf('Bea', 'Bea');
+    expect(bea.style.fontStyle).toBe('italic');
+    expect(bea.style.fontWeight).toBe('');
+    const ada = cellOf('Ada', 'Ada');
+    expect(ada.style.fontWeight).toBe('');
+    expect(ada.style.fontStyle).toBe('');
   });
 });

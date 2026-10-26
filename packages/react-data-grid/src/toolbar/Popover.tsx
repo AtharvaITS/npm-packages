@@ -123,6 +123,9 @@ export function Popover({
         top = above >= MARGIN ? above : Math.max(MARGIN, vh - height - MARGIN);
       }
       if (top < MARGIN) top = MARGIN;
+    } else if (centered) {
+      left = Math.max(MARGIN, Math.min((vw - width) / 2, vw - width - MARGIN));
+      top = Math.max(MARGIN, Math.min((vh - height) / 2, vh - height - MARGIN));
     } else {
       const rect = anchor!.getBoundingClientRect();
       const rtl = getComputedStyle(anchor!).direction === 'rtl';
@@ -135,26 +138,7 @@ export function Popover({
     el.style.top = `${top - origin.top}px`;
     el.style.left = `${left - origin.left}px`;
     el.style.visibility = 'visible';
-  }, [anchorRef, alignEnd, pointX, pointY]);
-    const rtl = getComputedStyle(anchor).direction === 'rtl';
-    let left = centered
-      ? (vw - width) / 2
-      : alignEnd !== rtl
-        ? rect.right - width
-        : rect.left;
-    left = Math.max(MARGIN, Math.min(left, vw - width - MARGIN));
-    let top = centered ? (vh - height) / 2 : rect.bottom + GAP;
-    if (
-      !centered &&
-      top + height > vh - MARGIN &&
-      rect.top - height - GAP > MARGIN
-    )
-      top = rect.top - height - GAP;
-    top = Math.max(MARGIN, Math.min(top, vh - height - MARGIN));
-    el.style.top = `${top - origin.top}px`;
-    el.style.left = `${left - origin.left}px`;
-    el.style.visibility = 'visible';
-  }, [anchorRef, alignEnd, centered]);
+  }, [anchorRef, alignEnd, centered, pointX, pointY]);
 
   // Promote to the top layer (when supported) before measuring, so the popover
   // escapes clipping ancestors and is measured against the viewport.

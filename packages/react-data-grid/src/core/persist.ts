@@ -1,5 +1,5 @@
 import { isFormatOperator, operatorValueCount } from '../conditional/evaluate';
-import { isHeaderFontWeight, isHeaderTextTransform } from '../conditional/headerStyle';
+import { isHeaderTextTransform, readHeaderFontWeight } from '../conditional/headerStyle';
 import { isTextAlignValue } from '../conditional/textAlignment';
 import type {
   ColumnStateItem,
@@ -96,7 +96,7 @@ export function clearPersisted(persistKey: string): void {
 
 const VIEWS: ViewType[] = ['table', 'grid', 'list'];
 const RULE_FONT_WEIGHTS: readonly FormatFontWeight[] = ['default', 'normal', '600', '700'];
-const RULE_FONT_STYLES: readonly FormatFontStyle[] = ['default', 'normal', 'italic'];
+const RULE_FONT_STYLES: readonly FormatFontStyle[] = ['default', 'bold', 'italic'];
 
 function isRuleFontWeight(value: string): value is FormatFontWeight {
   return (RULE_FONT_WEIGHTS as readonly string[]).includes(value);
@@ -104,6 +104,19 @@ function isRuleFontWeight(value: string): value is FormatFontWeight {
 
 function isRuleFontStyle(value: string): value is FormatFontStyle {
   return (RULE_FONT_STYLES as readonly string[]).includes(value);
+}
+
+/**
+ * Saved layouts from before column numbers started at 1 used `0` for the first column.
+ * A stored `0` is that older numbering, so each order moves up by one.
+ */
+function migrateLegacyColumnOrders(columns: ColumnStateItem[]): ColumnStateItem[] {
+  const legacy =
+    columns.length > 0 &&
+    columns.some((column) => column.order === 0) &&
+    columns.every((column) => Number.isInteger(column.order) && column.order >= 0);
+  if (!legacy) return columns;
+  return columns.map((column) => ({ ...column, order: column.order + 1 }));
 }
 
 function parseFormatStyle(raw: unknown): ConditionalFormatStyle {
@@ -156,12 +169,9 @@ function parseHeaderStyle(raw: unknown): HeaderStyle | undefined {
   if (typeof source.fontSize === 'number' && Number.isFinite(source.fontSize) && source.fontSize > 0) {
     style.fontSize = source.fontSize;
   }
-  if (
-    typeof source.fontWeight === 'string' &&
-    isHeaderFontWeight(source.fontWeight) &&
-    source.fontWeight !== 'default'
-  ) {
-    style.fontWeight = source.fontWeight;
+  if (typeof source.fontWeight === 'string') {
+    const fontWeight = readHeaderFontWeight(source.fontWeight);
+    if (fontWeight) style.fontWeight = fontWeight;
   }
   if (
     typeof source.textTransform === 'string' &&
@@ -225,18 +235,20 @@ export function readPersisted(
     result.pageSize = Math.floor(parsed.pageSize);
   }
   if (Array.isArray(parsed.columns)) {
-    result.columns = parsed.columns
-      .filter((c: any) => c && typeof c.id === 'string' && ids.has(c.id))
-      .map((c: any) => {
-        const item: ColumnStateItem = {
-          id: c.id,
-          order: typeof c.order === 'number' ? c.order : 0,
-        };
-        if (typeof c.width === 'number' && Number.isFinite(c.width)) item.width = c.width;
-        if (typeof c.hidden === 'boolean') item.hidden = c.hidden;
-        if (c.pinned === 'start' || c.pinned === 'end' || c.pinned === null) item.pinned = c.pinned;
-        return item;
-      });
+    result.columns = migrateLegacyColumnOrders(
+      parsed.columns
+        .filter((c: any) => c && typeof c.id === 'string' && ids.has(c.id))
+        .map((c: any) => {
+          const item: ColumnStateItem = {
+            id: c.id,
+            order: typeof c.order === 'number' && Number.isFinite(c.order) ? c.order : 0,
+          };
+          if (typeof c.width === 'number' && Number.isFinite(c.width)) item.width = c.width;
+          if (typeof c.hidden === 'boolean') item.hidden = c.hidden;
+          if (c.pinned === 'start' || c.pinned === 'end' || c.pinned === null) item.pinned = c.pinned;
+          return item;
+        }),
+    );
   }
   if (Array.isArray(parsed.formatRules)) {
     result.formatRules = parsed.formatRules.flatMap((rule: unknown) => {

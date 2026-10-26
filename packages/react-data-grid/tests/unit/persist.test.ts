@@ -21,7 +21,7 @@ const headerStyle: HeaderStyle = {
   backgroundColor: '#112233',
   textColor: '#ffffff',
   fontSize: 14,
-  fontWeight: '700',
+  fontWeight: 'bold',
   textTransform: 'uppercase',
 };
 const textAlignment: TextAlignment = { alignment: 'center' };
@@ -29,7 +29,7 @@ const full = {
   view: 'grid' as const,
   sort: [{ columnId: 'age', direction: 'desc' as const }],
   pageSize: 50,
-  columns: [{ id: 'name', width: 220, hidden: false, pinned: 'start' as const, order: 0 }],
+  columns: [{ id: 'name', width: 220, hidden: false, pinned: 'start' as const, order: 1 }],
   formatRules: [] as ConditionalFormatRule[],
   headerStyle: {} as HeaderStyle,
   textAlignment: {} as TextAlignment,
@@ -75,6 +75,36 @@ describe('persist', () => {
     expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })).toEqual(full);
   });
 
+  it('reads a saved 0-based column order as a column number', () => {
+    writePersisted('emp', {
+      ...full,
+      columns: [
+        { id: 'name', order: 0 },
+        { id: 'age', order: 1, width: 90 },
+      ],
+    });
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.columns).toEqual([
+      { id: 'name', order: 1 },
+      { id: 'age', order: 2, width: 90 },
+    ]);
+  });
+
+  it('keeps bold and italic rule font styles and drops the old normal style', () => {
+    writePersisted('emp', {
+      ...full,
+      formatRules: [
+        { ...rule, id: 'bold', style: { fontStyle: 'bold' } },
+        { ...rule, id: 'italic', style: { fontStyle: 'italic' } },
+        { ...rule, id: 'plain', style: { fontStyle: 'normal' as never, backgroundColor: '#00ff00' } },
+      ],
+    });
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.formatRules?.map((item) => item.style)).toEqual([
+      { fontStyle: 'bold' },
+      { fontStyle: 'italic' },
+      { backgroundColor: '#00ff00' },
+    ]);
+  });
+
   it('discards unknown versions and garbage', () => {
     localStorage.setItem(STORAGE_PREFIX + 'emp', JSON.stringify({ v: 2, view: 'grid' }));
     expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })).toBeUndefined();
@@ -96,6 +126,17 @@ describe('persist', () => {
     expect(saved.view).toBeUndefined();
     expect(saved.sort).toEqual([]);
     expect(saved.columns).toEqual([{ id: 'age', order: 1, width: 90 }]);
+  });
+
+  it('reads an older header weight of 700 as bold', () => {
+    writePersisted('emp', {
+      ...full,
+      headerStyle: { fontWeight: '700' as never, textTransform: 'uppercase' },
+    });
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.headerStyle).toEqual({
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+    });
   });
 
   it('round-trips formatting rules, header style and text alignment, and drops invalid ones', () => {

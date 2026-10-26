@@ -1067,6 +1067,7 @@
   }
   .aits-confirm-message {
     margin: 0;
+  }
   /* ---------- Export options ---------- */
   .aits-export-panel {
     min-width: min(18rem, calc(100vw - 16px));
@@ -1176,6 +1177,14 @@
   }
   .aits-format-field {
     justify-content: space-between;
+  }
+  .aits-format-weights {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .aits-format-weight-list {
+    display: flex;
+    flex-direction: column;
   }
   .aits-format-field .aits-input {
     flex: 1 1 8rem;
