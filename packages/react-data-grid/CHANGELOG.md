@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.8
+
+### Patch Changes
+
+- Add row context menu
+
 ## 1.0.7
 
 ### Patch Changes
