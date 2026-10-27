@@ -4,6 +4,7 @@ import type { EffectiveColumn } from '../../core/columnState';
 import { useConditionalFormats } from '../../conditional/FormatContext';
 import { useGrid } from '../../state/GridContext';
 import { isInteractiveTarget } from '../cellContent';
+import { handleRowContextMenu } from '../rowContextMenu';
 import { SelectCheckbox } from '../SelectCheckbox';
 import { Cell } from './Cell';
 
@@ -68,6 +69,9 @@ export const Row = memo(function Row({
       data-row-id={id}
       style={formats.rowStyle}
       onClick={onClick}
+      onContextMenu={(event) =>
+        handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)
+      }
     >
       {hasSelect && (
         <div

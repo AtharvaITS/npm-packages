@@ -24,7 +24,7 @@ const savedRule: ConditionalFormatRule = {
   style: { backgroundColor: '#00ff00', fontWeight: '700', fontStyle: 'italic' },
 };
 
-const savedHeader: HeaderStyle = { textTransform: 'uppercase', fontWeight: '700' };
+const savedHeader: HeaderStyle = { textTransform: 'uppercase', fontWeight: 'bold' };
 
 function cellOf(rowName: string, text: string) {
   const row = screen.getByText(rowName).closest('[role="row"]') as HTMLElement;

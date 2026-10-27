@@ -57,16 +57,14 @@ const formatFontWeights: Record<FormatFontWeight, string> = {
 
 const formatFontStyles: Record<FormatFontStyle, string> = {
   default: 'Default',
-  normal: 'Normal',
+  bold: 'Bold',
   italic: 'Italic',
 };
 
 const headerStyleFontWeights: Record<HeaderFontWeight, string> = {
   default: 'Default',
-  normal: 'Normal',
-  '500': 'Medium',
-  '600': 'Semi Bold',
-  '700': 'Bold',
+  italic: 'Italic',
+  bold: 'Bold',
 };
 
 const headerStyleTransforms: Record<HeaderTextTransform, string> = {
@@ -135,6 +133,18 @@ export const defaultMessages: Messages = {
   clearSelection: 'Clear selection',
   pageStatus: (page, pageCount) => `Page ${page} of ${pageCount}`,
   resizeColumn: 'Resize column',
+  rowMenu: 'Row actions',
+  viewRow: 'View',
+  editRow: 'Edit',
+  deleteRow: 'Delete',
+  rowDetails: 'Details',
+  editRecord: 'Edit record',
+  confirmDelete: 'Confirm delete',
+  confirmDeleteMessage: 'Are you sure you want to delete this record?',
+  close: 'Close',
+  save: 'Save',
+  cancel: 'Cancel',
+  invalidValue: 'Enter a valid value.',
   format: 'Format',
   formatTitle: 'Conditional Formatting',
   formatAdd: 'Add rule',

@@ -173,14 +173,18 @@ describe('conditional formatting operators', () => {
     expect(formatToStyle({ fontWeight: 'default', fontStyle: 'default' })).toBeUndefined();
     expect(formatToStyle(undefined)).toBeUndefined();
     expect(formatToStyle({})).toBeUndefined();
-    expect(formatToStyle({ backgroundColor: '#abc', textColor: '#def', fontWeight: 'normal', fontStyle: 'normal' })).toEqual({
+    expect(formatToStyle({ backgroundColor: '#abc', textColor: '#def', fontWeight: 'normal', fontStyle: 'italic' })).toEqual({
       backgroundColor: '#abc',
       color: '#def',
       fontWeight: 'normal',
-      fontStyle: 'normal',
+      fontStyle: 'italic',
       '--aits-cf-bg': '#abc',
       '--aits-cf-color': '#def',
     });
+    expect(formatToStyle({ fontStyle: 'bold' })).toEqual({ fontWeight: '700' });
+    expect(formatToStyle({ fontWeight: 'normal', fontStyle: 'bold' })).toEqual({ fontWeight: '700' });
+    expect(formatToStyle({ fontWeight: '600', fontStyle: 'bold' })).toEqual({ fontWeight: '600' });
+    expect(formatToStyle({ fontStyle: 'default' })).toBeUndefined();
     expect(formatToStyle({ fontWeight: '600', textColor: '#111111' })).toMatchObject({
       color: '#111111',
       fontWeight: '600',

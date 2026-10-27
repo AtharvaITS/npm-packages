@@ -32,7 +32,7 @@ describe('header style', () => {
       backgroundColor: '#1e293b',
       textColor: '#ffffff',
       fontSize: '14',
-      fontWeight: '700',
+      fontWeight: 'bold',
       textTransform: 'uppercase',
     });
     expect(result).toEqual({
@@ -41,7 +41,7 @@ describe('header style', () => {
         backgroundColor: '#1e293b',
         textColor: '#ffffff',
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: 'bold',
         textTransform: 'uppercase',
       },
     });
@@ -49,7 +49,8 @@ describe('header style', () => {
       backgroundColor: '#1e293b',
       color: '#ffffff',
       fontSize: '14px',
-      fontWeight: '700',
+      fontWeight: 700,
+      fontStyle: 'normal',
       textTransform: 'uppercase',
       '--aits-header-bg': '#1e293b',
       '--aits-header-transform': 'uppercase',
@@ -83,7 +84,7 @@ describe('header style', () => {
     expect(headerLabelStyle({ textTransform: 'default' })).toBeUndefined();
     expect(
       describeHeaderStyle(
-        { backgroundColor: '#1e293b', textColor: '#ffffff', fontSize: 14, fontWeight: '700', textTransform: 'uppercase' },
+        { backgroundColor: '#1e293b', textColor: '#ffffff', fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase' },
         {
           background: 'Background Color',
           text: 'Text Color',
@@ -91,7 +92,7 @@ describe('header style', () => {
           fontSizeUnit: 'px',
           fontWeight: 'Font Weight',
           textTransform: 'Text Transform',
-          weights: { default: 'Default', normal: 'Normal', '500': 'Medium', '600': 'Semi Bold', '700': 'Bold' },
+          weights: { default: 'Default', italic: 'Italic', bold: 'Bold' },
           transforms: { default: 'Default', uppercase: 'Uppercase', lowercase: 'Lowercase', capitalize: 'Capitalize' },
         },
       ),
@@ -109,14 +110,14 @@ describe('header style', () => {
       headerStyleToDraft({
         backgroundColor: '#1e293b',
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: 'italic',
         textTransform: 'capitalize',
       }),
     ).toEqual({
       backgroundColor: '#1e293b',
       textColor: '',
       fontSize: '14',
-      fontWeight: '500',
+      fontWeight: 'italic',
       textTransform: 'capitalize',
     });
     expect(headerStyleToDraft(undefined)).toEqual({
@@ -145,14 +146,15 @@ const labels = {
   fontSizeUnit: 'px',
   fontWeight: 'Font Weight',
   textTransform: 'Text Transform',
-  weights: { default: 'Default', normal: 'Normal', '500': 'Medium', '600': 'Semi Bold', '700': 'Bold' },
+  weights: { default: 'Default', italic: 'Italic', bold: 'Bold' },
   transforms: { default: 'Default', uppercase: 'Uppercase', lowercase: 'Lowercase', capitalize: 'Capitalize' },
 };
 
 describe('header formatting guards', () => {
   it('accepts only the known font weights and text transforms', () => {
     for (const weight of HEADER_FONT_WEIGHTS) expect(isHeaderFontWeight(weight)).toBe(true);
-    expect(isHeaderFontWeight('bold')).toBe(false);
+    expect(isHeaderFontWeight('700')).toBe(false);
+    expect(isHeaderFontWeight('normal')).toBe(false);
     expect(isHeaderFontWeight('')).toBe(false);
 
     for (const transform of HEADER_TEXT_TRANSFORMS) expect(isHeaderTextTransform(transform)).toBe(true);
@@ -175,9 +177,9 @@ describe('header formatting draft', () => {
       ok: true,
       style: { fontSize: 13.5 },
     });
-    expect(draftToHeaderStyle(blankDraft({ fontWeight: 'normal' }))).toEqual({
+    expect(draftToHeaderStyle(blankDraft({ fontWeight: 'italic' }))).toEqual({
       ok: true,
-      style: { fontWeight: 'normal' },
+      style: { fontWeight: 'italic' },
     });
     expect(draftToHeaderStyle(blankDraft({ textTransform: 'lowercase' }))).toEqual({
       ok: true,
@@ -207,13 +209,19 @@ describe('header formatting css', () => {
   });
 
   it.each([
-    ['normal', 'normal'],
-    ['500', '500'],
-    ['600', '600'],
-    ['700', '700'],
-  ] as const)('maps font weight %s onto the header row', (fontWeight, cssWeight) => {
-    expect(headerStyleToCss({ fontWeight })).toEqual({ fontWeight: cssWeight });
-    expect(headerLabelStyle({ fontWeight })).toBeUndefined();
+    ['italic', { fontWeight: 400, fontStyle: 'italic' }],
+    ['bold', { fontWeight: 700, fontStyle: 'normal' }],
+  ] as const)('maps font weight %s onto the header row and the label', (fontWeight, face) => {
+    expect(headerStyleToCss({ fontWeight })).toEqual(face);
+    expect(headerLabelStyle({ fontWeight })).toEqual(face);
+  });
+
+  it('reads an older numeric bold weight as bold', () => {
+    expect(headerStyleToCss({ fontWeight: '700' as HeaderFontWeight })).toEqual({
+      fontWeight: 700,
+      fontStyle: 'normal',
+    });
+    expect(headerStyleToDraft({ fontWeight: '600' as HeaderFontWeight }).fontWeight).toBe('bold');
   });
 
   it.each(['uppercase', 'lowercase', 'capitalize'] as const)(
@@ -250,10 +258,8 @@ describe('header formatting summary', () => {
   });
 
   it.each([
-    ['normal', 'Normal'],
-    ['500', 'Medium'],
-    ['600', 'Semi Bold'],
-    ['700', 'Bold'],
+    ['italic', 'Italic'],
+    ['bold', 'Bold'],
   ] as const)('names font weight %s', (fontWeight: HeaderFontWeight, name) => {
     expect(describeHeaderStyle({ fontWeight }, labels)).toEqual([`Font Weight: ${name}`]);
   });

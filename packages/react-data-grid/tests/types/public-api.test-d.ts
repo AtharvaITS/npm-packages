@@ -42,6 +42,16 @@ describe('public API types', () => {
     >();
   });
 
+  it('onRowEdit and onRowDelete receive the right-clicked row', () => {
+    type Edit = NonNullable<ReactDataGridProps<Employee>['onRowEdit']>;
+    type Delete = NonNullable<ReactDataGridProps<Employee>['onRowDelete']>;
+    expectTypeOf<Parameters<Edit>[0]['row']>().toEqualTypeOf<Employee>();
+    expectTypeOf<Parameters<Edit>[0]['nextRow']>().toEqualTypeOf<Employee>();
+    expectTypeOf<Parameters<Edit>[0]['rowId']>().toEqualTypeOf<RowId>();
+    expectTypeOf<Parameters<Delete>[0]>().toEqualTypeOf<Employee>();
+    expectTypeOf<Parameters<Delete>[1]>().toEqualTypeOf<RowId>();
+  });
+
   it('onSelectionChange receives typed rows', () => {
     type Handler = NonNullable<ReactDataGridProps<Employee>['onSelectionChange']>;
     expectTypeOf<Parameters<Handler>[0]>().toEqualTypeOf<RowId[]>();

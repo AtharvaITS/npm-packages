@@ -37,9 +37,9 @@ describe('applyColumnState', () => {
 
   it('applies width, order, pin and hidden state, and clamps width', () => {
     const { ordered, visible } = applyColumnState(columns, [
-      { id: 'salary', order: 0, pinned: 'end', width: 9999 },
-      { id: 'notes', order: 1, hidden: true },
-      { id: 'city', order: 0, pinned: null },
+      { id: 'salary', order: 4, pinned: 'end', width: 9999 },
+      { id: 'notes', order: 3, hidden: true },
+      { id: 'city', order: 2, pinned: null },
       { id: 'unknown', order: 9 },
     ]);
     expect(ids(ordered)).toEqual(['name', 'city', 'notes', 'salary']);
@@ -57,13 +57,80 @@ describe('applyColumnState', () => {
   });
 
   it('always leaves one column visible', () => {
-    const hidden = columns.map((column, order) => ({ id: column.id, order, hidden: true }));
+    const hidden = columns.map((column, index) => ({ id: column.id, order: index + 1, hidden: true }));
     const applied = applyColumnState(columns, hidden);
     expect(applied.visible).toHaveLength(1);
     expect(applied.visible[0]).toMatchObject({ id: 'name', hidden: false });
 
     const only = resolveColumns([{ field: 'only', hidden: true }], [{ only: 1 }]);
     expect(applyColumnState(only, []).visible.map((column) => column.hidden)).toEqual([false]);
+  });
+
+  it('uses a 1-based column number and ignores 0 and negative orders', () => {
+    const numbered = resolveColumns(
+      [
+        { field: 'name' },
+        { field: 'city' },
+        { field: 'notes' },
+        { field: 'salary' },
+        { field: 'team' },
+        { field: 'extra' },
+      ],
+      [{ name: 'A', city: 'B', notes: 'C', salary: 1, team: 'D', extra: 'E' }],
+    );
+    const definition = ['name', 'city', 'notes', 'salary', 'team', 'extra'];
+
+    expect(ids(applyColumnState(numbered, [{ id: 'notes', order: 1 }]).ordered)).toEqual([
+      'notes',
+      'name',
+      'city',
+      'salary',
+      'team',
+      'extra',
+    ]);
+    expect(ids(applyColumnState(numbered, [{ id: 'name', order: 1 }]).ordered)).toEqual(definition);
+    expect(ids(applyColumnState(numbered, [{ id: 'notes', order: 5, hidden: true }]).ordered)).toEqual([
+      'name',
+      'city',
+      'salary',
+      'team',
+      'notes',
+      'extra',
+    ]);
+    expect(
+      applyColumnState(numbered, [{ id: 'notes', order: 5, hidden: true }]).ordered.find(
+        (column) => column.id === 'notes',
+      )!.hidden,
+    ).toBe(true);
+
+    const zero = applyColumnState(numbered, [{ id: 'notes', order: 0, hidden: true }]);
+    expect(ids(zero.ordered)).toEqual(definition);
+    expect(zero.ordered.find((column) => column.id === 'notes')!.hidden).toBe(true);
+    expect(ids(applyColumnState(numbered, [{ id: 'salary', order: -3 }]).ordered)).toEqual(definition);
+    expect(ids(applyColumnState(numbered, [{ id: 'extra', order: -1, hidden: true }]).ordered)).toEqual(
+      definition,
+    );
+
+    const { ordered } = applyColumnState(numbered, [{ id: 'notes', order: 1 }]);
+    const snap = snapshotState(ordered, []);
+    expect(snap.map((item) => item.order)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(ids(applyColumnState(numbered, snap).ordered)).toEqual(ids(ordered));
+  });
+
+  it('counts order on the visible columns when another column is hidden', () => {
+    const employees = resolveColumns(
+      [
+        { field: 'id', hidden: true },
+        { field: 'avatar' },
+        { field: 'name', pinned: 'start' },
+        { field: 'label' },
+        { field: 'department' },
+        { field: 'bio' },
+      ],
+      [{ id: '1', avatar: '', name: 'Ada', label: 'L', department: 'Design', bio: 'Hi' }],
+    );
+    const { visible } = applyColumnState(employees, [{ id: 'bio', order: 4, hidden: false }]);
+    expect(ids(visible)).toEqual(['name', 'avatar', 'label', 'bio', 'department']);
   });
 
   it('uses an explicit null pin to unpin a column that was pinned by definition', () => {
@@ -79,7 +146,7 @@ describe('column state edits', () => {
   it('snapshots display order and keeps a previously saved width', () => {
     const snap = snapshotState(ordered, [{ id: 'salary', order: 9, width: 140 }]);
     expect(snap.map((item) => item.id)).toEqual(ids(ordered));
-    expect(snap.map((item) => item.order)).toEqual([0, 1, 2, 3]);
+    expect(snap.map((item) => item.order)).toEqual([1, 2, 3, 4]);
     expect(snap.find((item) => item.id === 'salary')!.width).toBe(140);
     expect(snap.find((item) => item.id === 'name')!.width).toBeUndefined();
   });

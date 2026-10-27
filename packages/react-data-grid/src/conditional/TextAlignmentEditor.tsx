@@ -30,7 +30,7 @@ export function TextAlignmentEditor({
       anchorRef={anchorRef}
       label={messages.textAlignment}
       className="aits-format-editor"
-      centered
+      alignEnd
     >
       <div className="aits-popover-title">{messages.textAlignment}</div>
       <fieldset className="aits-export-fieldset">

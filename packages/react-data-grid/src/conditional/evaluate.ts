@@ -383,10 +383,16 @@ export function formatToStyle(style: ConditionalFormatStyle | undefined): CSSPro
   const css: CSSProperties = {};
   if (style.backgroundColor) css.backgroundColor = style.backgroundColor;
   if (style.textColor) css.color = style.textColor;
-  if (style.fontWeight === 'normal' || style.fontWeight === '600' || style.fontWeight === '700') {
+  if (style.fontWeight === '600' || style.fontWeight === '700') {
     css.fontWeight = style.fontWeight;
+  } else if (style.fontWeight === 'normal' && style.fontStyle !== 'bold') {
+    css.fontWeight = 'normal';
   }
-  if (style.fontStyle === 'normal' || style.fontStyle === 'italic') css.fontStyle = style.fontStyle;
+  if (style.fontStyle === 'bold') {
+    if (css.fontWeight !== '600' && css.fontWeight !== '700') css.fontWeight = '700';
+  } else if (style.fontStyle === 'italic') {
+    css.fontStyle = 'italic';
+  }
   const vars = css as CSSProperties & Record<string, string>;
   if (style.backgroundColor) vars['--aits-cf-bg'] = style.backgroundColor;
   if (style.textColor) vars['--aits-cf-color'] = style.textColor;
