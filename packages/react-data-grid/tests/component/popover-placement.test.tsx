@@ -19,9 +19,11 @@ const rect = (x: number, y: number, w: number, h: number) =>
 function Harness({
   onClose = () => {},
   alignEnd = true,
+  centered = false,
 }: {
   onClose?(): void;
   alignEnd?: boolean;
+  centered?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   return (
@@ -35,6 +37,7 @@ function Harness({
         anchorRef={ref}
         label="Menu"
         alignEnd={alignEnd}
+        centered={centered}
         items={[{ label: 'One', onSelect() {} }]}
       />
     </>
@@ -109,6 +112,13 @@ describe('anchored popover placement', () => {
     expect(menu().style.left).toBe('816px'); // 1000 − 176 − 8
   });
 
+  it('centers in the viewport when centered is set', () => {
+    anchorRect = rect(500, 100, 26, 26);
+    render(<Harness centered />);
+    expect(menu().style.left).toBe('412px'); // (1000 − 176) / 2
+    expect(menu().style.top).toBe('350px'); // (800 − 100) / 2
+  });
+
   it('flips above the anchor when there is no room below', () => {
     anchorRect = rect(500, 740, 26, 26);
     render(<Harness />);
@@ -160,6 +170,36 @@ describe('anchored popover placement', () => {
     fireEvent.scroll(window);
     expect(onClose).not.toHaveBeenCalled();
     expect(menu().style.top).toBe('180px');
+  });
+
+  it('places a cursor menu inside the viewport', () => {
+    anchorRect = rect(10, 10, 20, 20);
+    const ref = { current: document.createElement('button') };
+    const { rerender } = render(
+      <Menu
+        open
+        onClose={() => {}}
+        anchorRef={ref}
+        label="Menu"
+        point={{ x: 980, y: 760 }}
+        items={[{ label: 'One', onSelect() {} }]}
+      />,
+    );
+    expect(menu().style.position).toBe('fixed');
+    expect(menu().style.left).toBe('816px');
+    expect(menu().style.top).toBe('660px');
+    rerender(
+      <Menu
+        open
+        onClose={() => {}}
+        anchorRef={ref}
+        label="Menu"
+        point={{ x: 0, y: 0 }}
+        items={[{ label: 'One', onSelect() {} }]}
+      />,
+    );
+    expect(menu().style.left).toBe('8px');
+    expect(menu().style.top).toBe('8px');
   });
 
   it('uses the top layer when the Popover API exists', () => {

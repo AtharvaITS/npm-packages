@@ -1,5 +1,35 @@
 # @atharvaits/react-data-grid
 
+## 1.0.8
+
+### Patch Changes
+
+- Add row context menu
+
+## 1.0.7
+
+### Patch Changes
+
+- implement text allignment
+
+## 1.0.6
+
+### Patch Changes
+
+- implement new fature header formating
+
+## 1.0.5
+
+### Patch Changes
+
+- "implement conditional formating feature"
+
+## 1.0.4
+
+### Patch Changes
+
+- add unit test and export functionality
+
 ## 1.0.3
 
 ### Patch Changes

@@ -12,7 +12,7 @@
 - Sorting, search and typed filters
 - Pagination, or virtual scrolling for 100,000+ rows
 - Server-side data mode for large data sets
-- Row selection, and column resize, reorder, hide and pin
+- Row selection, a row context menu (view, edit, delete), and column resize, reorder, hide and pin
 - Saved user preferences
 - Theming with CSS variables, plus light and dark modes
 - Localization and right-to-left layouts
@@ -46,7 +46,7 @@ export function People() {
 
 ## Documentation
 
-See the [package documentation](./packages/react-data-grid/README.md) for columns, views, sorting and filtering, server mode, selection, theming, localization, accessibility and the full props reference.
+See the [package documentation](./packages/react-data-grid/README.md) for columns, views, sorting and filtering, server mode, selection, the row context menu, theming, localization, accessibility and the full props reference.
 
 ## License
 

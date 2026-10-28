@@ -1,4 +1,13 @@
-import type { FilterOperator, Messages } from '../types';
+import type {
+  FilterOperator,
+  FormatFontStyle,
+  FormatFontWeight,
+  FormatOperator,
+  HeaderFontWeight,
+  HeaderTextTransform,
+  Messages,
+  TextAlignValue,
+} from '../types';
 
 const operators: Record<FilterOperator, string> = {
   contains: 'contains',
@@ -20,6 +29,55 @@ const operators: Record<FilterOperator, string> = {
   isNotEmpty: 'is not empty',
   isTrue: 'is true',
   isFalse: 'is false',
+};
+
+const formatOperators: Record<FormatOperator, string> = {
+  equal: 'Equal',
+  notEqual: 'Not equal',
+  isEmpty: 'Is empty',
+  isNotEmpty: 'Is not empty',
+  contains: 'Contains',
+  notContains: 'Does not contain',
+  startsWith: 'Starts with',
+  endsWith: 'Ends with',
+  between: 'Between',
+  notBetween: 'Not between',
+  lt: 'Less than',
+  lte: 'Less than or equal',
+  gt: 'Greater than',
+  gte: 'Greater than or equal',
+};
+
+const formatFontWeights: Record<FormatFontWeight, string> = {
+  default: 'Default',
+  normal: 'Normal',
+  '600': '600',
+  '700': '700',
+};
+
+const formatFontStyles: Record<FormatFontStyle, string> = {
+  default: 'Default',
+  bold: 'Bold',
+  italic: 'Italic',
+};
+
+const headerStyleFontWeights: Record<HeaderFontWeight, string> = {
+  default: 'Default',
+  italic: 'Italic',
+  bold: 'Bold',
+};
+
+const headerStyleTransforms: Record<HeaderTextTransform, string> = {
+  default: 'Default',
+  uppercase: 'Uppercase',
+  lowercase: 'Lowercase',
+  capitalize: 'Capitalize',
+};
+
+const textAlignments: Record<TextAlignValue, string> = {
+  left: 'Left',
+  center: 'Center',
+  right: 'Right',
 };
 
 export const defaultMessages: Messages = {
@@ -84,6 +142,84 @@ export const defaultMessages: Messages = {
   rowGroupPanelLabel: 'Row groups',
   rowGroupDropHint: 'Drag here to set row groups',
   removeRowGroup: (header) => `Remove ${header} from grouping`,
+  rowMenu: 'Row actions',
+  viewRow: 'View',
+  editRow: 'Edit',
+  deleteRow: 'Delete',
+  rowDetails: 'Details',
+  editRecord: 'Edit record',
+  confirmDelete: 'Confirm delete',
+  confirmDeleteMessage: 'Are you sure you want to delete this record?',
+  close: 'Close',
+  save: 'Save',
+  cancel: 'Cancel',
+  invalidValue: 'Enter a valid value.',
+  format: 'Format',
+  formatTitle: 'Conditional Formatting',
+  formatAdd: 'Add rule',
+  formatEmpty: 'No conditional formatting rules added.',
+  formatClose: 'Close',
+  formatEdit: 'Edit',
+  formatDelete: 'Delete',
+  formatSave: 'Save',
+  formatCancel: 'Cancel',
+  formatColumn: 'Column',
+  formatOperator: 'Operator',
+  formatOperatorPlaceholder: 'Select an operator',
+  formatValue: 'Value',
+  formatValueTo: 'and',
+  formatScope: 'Scope',
+  formatScopeCell: 'Cell',
+  formatScopeRow: 'Row',
+  formatBackground: 'Background',
+  formatText: 'Text',
+  formatFontWeight: 'Font weight',
+  formatFontStyle: 'Font style',
+  formatFont: 'Font',
+  formatRules: 'Existing rules',
+  formatAddTitle: 'Add rule',
+  formatEditTitle: 'Edit rule',
+  formatPreview: 'Formatting',
+  formatUseColor: 'Apply',
+  formatOperators,
+  formatFontWeights,
+  formatFontStyles,
+  formatValidationColumn: 'Select a column.',
+  formatValidationOperator: 'Select an operator.',
+  formatValidationValue: 'Enter a value.',
+  formatValidationRange: 'Enter both values.',
+  formatValidationNumber: 'Enter a valid number.',
+  formatValidationDate: 'Enter a valid date.',
+  headerStyle: 'Header Style',
+  headerStyleBackground: 'Background Color',
+  headerStyleText: 'Text Color',
+  headerStyleFontSize: 'Font Size',
+  headerStyleFontSizeUnit: 'px',
+  headerStyleFontWeight: 'Font Weight',
+  headerStyleTextTransform: 'Text Transform',
+  headerStyleApply: 'Apply',
+  headerStyleFontWeights,
+  headerStyleTransforms,
+  textAlignment: 'Text Alignment',
+  textAlignmentApply: 'Apply',
+  textAlignments,
+  exportLabel: 'Export',
+  exportTitle: 'Export options',
+  exportScope: 'What to export',
+  exportScopeView: 'Current Table View',
+  exportScopeAll: 'All Data',
+  exportScopePage: 'Current Page',
+  exportScopeSelected: 'Selected Rows',
+  exportFormat: 'Format',
+  exportFormatCsv: 'CSV',
+  exportFormatExcel: 'Excel',
+  exportFormatPdf: 'PDF',
+  exportAction: 'Export',
+  exportCancel: 'Cancel',
+  exportEmpty: 'Nothing to export.',
+  exportNoneSelected: 'No rows selected.',
+  exportServerNote: 'Only rows loaded in the grid are included.',
+  exportDone: (count) => `Exported ${count} ${count === 1 ? 'row' : 'rows'}.`,
 };
 
 export function mergeMessages(partial?: Partial<Messages>): Messages {
@@ -92,5 +228,23 @@ export function mergeMessages(partial?: Partial<Messages>): Messages {
     ...defaultMessages,
     ...partial,
     operators: { ...defaultMessages.operators, ...(partial.operators ?? {}) },
+    formatOperators: { ...defaultMessages.formatOperators, ...(partial.formatOperators ?? {}) },
+    formatFontWeights: {
+      ...defaultMessages.formatFontWeights,
+      ...(partial.formatFontWeights ?? {}),
+    },
+    formatFontStyles: { ...defaultMessages.formatFontStyles, ...(partial.formatFontStyles ?? {}) },
+    headerStyleFontWeights: {
+      ...defaultMessages.headerStyleFontWeights,
+      ...(partial.headerStyleFontWeights ?? {}),
+    },
+    headerStyleTransforms: {
+      ...defaultMessages.headerStyleTransforms,
+      ...(partial.headerStyleTransforms ?? {}),
+    },
+    textAlignments: {
+      ...defaultMessages.textAlignments,
+      ...(partial.textAlignments ?? {}),
+    },
   };
 }

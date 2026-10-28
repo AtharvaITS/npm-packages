@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedColumn } from '../../src/core/columns';
-import { formatValue, toDate } from '../../src/core/format';
+import { formatCell, formatValue, toDate, toNumber } from '../../src/core/format';
 
 const col = (type: ResolvedColumn['type'], extra: Partial<ResolvedColumn> = {}) =>
   ({ id: 'c', type, ...extra }) as ResolvedColumn;
@@ -84,6 +84,42 @@ describe('formatValue (data model §4.2)', () => {
 
   it('survives an invalid locale', () => {
     expect(formatValue(5, col('number'), { locale: 'not a locale!!' })).toBe('5');
+  });
+});
+
+describe('formatCell', () => {
+  it('uses a column format override and swallows a throwing formatter', () => {
+    const row = { n: 3 };
+    const formatted = col('number', {
+      field: 'n',
+      format: (value) => `$${value}`,
+    });
+    expect(formatCell(row, formatted)).toBe('$3');
+    expect(
+      formatCell(row, {
+        ...formatted,
+        format: () => {
+          throw new Error('format failed');
+        },
+      }),
+    ).toBe('');
+    expect(formatCell(row, { ...formatted, format: () => null as unknown as string })).toBe('');
+  });
+
+  it('falls back to locale formatting when no override is set', () => {
+    expect(formatCell({ n: 1200 }, col('number', { field: 'n' }), en)).toBe('1,200');
+  });
+});
+
+describe('toNumber', () => {
+  it('converts finite numbers, bigints and numeric strings', () => {
+    expect(toNumber(4)).toBe(4);
+    expect(toNumber(2n)).toBe(2);
+    expect(toNumber(' 3.5 ')).toBe(3.5);
+    expect(toNumber('')).toBeUndefined();
+    expect(toNumber('abc')).toBeUndefined();
+    expect(toNumber(null)).toBeUndefined();
+    expect(toNumber(Number.NaN)).toBeNaN();
   });
 });
 

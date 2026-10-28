@@ -56,6 +56,10 @@ export interface ColumnStateItem {
   width?: number;
   hidden?: boolean;
   pinned?: 'start' | 'end' | null;
+  /**
+   * 1-based column number. `1` is the first column and `5` is the fifth.
+   * `0` and negative numbers are ignored, so that column stays where the column list defined it.
+   */
   order: number;
   /** When set, overrides the column definition's `rowGroup`. */
   rowGroup?: boolean;
@@ -186,7 +190,158 @@ export interface Messages {
   rowGroupPanelLabel: string;
   rowGroupDropHint: string;
   removeRowGroup: (header: string) => string;
+  rowMenu: string;
+  viewRow: string;
+  editRow: string;
+  deleteRow: string;
+  rowDetails: string;
+  editRecord: string;
+  confirmDelete: string;
+  confirmDeleteMessage: string;
+  close: string;
+  save: string;
+  cancel: string;
+  invalidValue: string;
+  // Conditional formatting.
+  format: string;
+  formatTitle: string;
+  formatAdd: string;
+  formatEmpty: string;
+  formatClose: string;
+  formatEdit: string;
+  formatDelete: string;
+  formatSave: string;
+  formatCancel: string;
+  formatColumn: string;
+  formatOperator: string;
+  formatOperatorPlaceholder: string;
+  formatValue: string;
+  formatValueTo: string;
+  formatScope: string;
+  formatScopeCell: string;
+  formatScopeRow: string;
+  formatBackground: string;
+  formatText: string;
+  formatFontWeight: string;
+  formatFontStyle: string;
+  formatFont: string;
+  formatRules: string;
+  formatAddTitle: string;
+  formatEditTitle: string;
+  formatPreview: string;
+  formatUseColor: string;
+  formatOperators: Record<FormatOperator, string>;
+  formatFontWeights: Record<FormatFontWeight, string>;
+  formatFontStyles: Record<FormatFontStyle, string>;
+  formatValidationColumn: string;
+  formatValidationOperator: string;
+  formatValidationValue: string;
+  formatValidationRange: string;
+  formatValidationNumber: string;
+  formatValidationDate: string;
+  headerStyle: string;
+  headerStyleBackground: string;
+  headerStyleText: string;
+  headerStyleFontSize: string;
+  headerStyleFontSizeUnit: string;
+  headerStyleFontWeight: string;
+  headerStyleTextTransform: string;
+  headerStyleApply: string;
+  headerStyleFontWeights: Record<HeaderFontWeight, string>;
+  headerStyleTransforms: Record<HeaderTextTransform, string>;
+  textAlignment: string;
+  textAlignmentApply: string;
+  textAlignments: Record<TextAlignValue, string>;
+  // Export options.
+  exportLabel: string;
+  exportTitle: string;
+  exportScope: string;
+  exportScopeView: string;
+  exportScopeAll: string;
+  exportScopePage: string;
+  exportScopeSelected: string;
+  exportFormat: string;
+  exportFormatCsv: string;
+  exportFormatExcel: string;
+  exportFormatPdf: string;
+  exportAction: string;
+  exportCancel: string;
+  exportEmpty: string;
+  exportNoneSelected: string;
+  exportServerNote: string;
+  exportDone: (count: number) => string;
 }
+
+export type FormatOperator =
+  | 'equal'
+  | 'notEqual'
+  | 'isEmpty'
+  | 'isNotEmpty'
+  | 'contains'
+  | 'notContains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'between'
+  | 'notBetween'
+  | 'lt'
+  | 'lte'
+  | 'gt'
+  | 'gte';
+
+export type FormatScope = 'cell' | 'row';
+
+export type FormatFontWeight = 'default' | 'normal' | '600' | '700';
+
+export type FormatFontStyle = 'default' | 'bold' | 'italic';
+
+/** Header font weight. Italic and bold are the only applied faces. */
+export type HeaderFontWeight = 'default' | 'italic' | 'bold';
+
+export type HeaderTextTransform = 'default' | 'uppercase' | 'lowercase' | 'capitalize';
+
+/** Visual style for the table header. Does not change column header text. */
+export interface HeaderStyle {
+  backgroundColor?: string;
+  textColor?: string;
+  fontSize?: number;
+  fontWeight?: HeaderFontWeight;
+  textTransform?: HeaderTextTransform;
+}
+
+/** One alignment for the whole table. Only one value is active. */
+export type TextAlignValue = 'left' | 'center' | 'right';
+
+/**
+ * Global text alignment for header cells and every data cell.
+ * An empty object keeps each column's own alignment.
+ */
+export interface TextAlignment {
+  alignment?: TextAlignValue;
+}
+
+export interface ConditionalFormatStyle {
+  backgroundColor?: string;
+  textColor?: string;
+  fontWeight?: FormatFontWeight;
+  fontStyle?: FormatFontStyle;
+}
+
+/** One conditional formatting rule. Later rules override earlier ones on the same property. Cell scope overrides row scope. */
+export interface ConditionalFormatRule {
+  id: string;
+  columnId: string;
+  operator: FormatOperator;
+  value?: string;
+  value2?: string;
+  scope: FormatScope;
+  style: ConditionalFormatStyle;
+}
+
+/** Which rows an export includes. */
+export type ExportScope = 'view' | 'all' | 'page' | 'selected';
+
+/** File format produced by the export dialog. */
+export type ExportFormat = 'csv' | 'excel' | 'pdf';
 
 export interface CellContext<TRow = Record<string, unknown>> {
   row: TRow;
@@ -214,6 +369,18 @@ export interface CardContext<TRow = Record<string, unknown>> {
 }
 
 export type ListItemContext<TRow = Record<string, unknown>> = CardContext<TRow>;
+
+/**
+ * A saved row from the context-menu edit dialog.
+ * The grid does not write this into `data`. The host updates its list or calls an API.
+ */
+export interface RowEdit<TRow = Record<string, unknown>> {
+  /** Row that was right-clicked, before the edit. */
+  row: TRow;
+  rowId: RowId;
+  /** Row after the edited fields are applied. */
+  nextRow: TRow;
+}
 
 /** A committed double-click edit. The grid does not write this into `data`. */
 export interface CellEdit<TRow = Record<string, unknown>> {
@@ -320,6 +487,24 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
   onFiltersChange?: (filters: FilterCondition[]) => void;
   filterable?: boolean;
 
+  // ---- Conditional formatting -------------------------------------------
+  /** Shows the Format button. Set false to hide it. Provided rules still apply. */
+  conditionalFormatting?: boolean;
+  formatRules?: ConditionalFormatRule[];
+  defaultFormatRules?: ConditionalFormatRule[];
+  onFormatRulesChange?: (rules: ConditionalFormatRule[]) => void;
+  headerStyle?: HeaderStyle;
+  defaultHeaderStyle?: HeaderStyle;
+  onHeaderStyleChange?: (style: HeaderStyle) => void;
+  textAlignment?: TextAlignment;
+  defaultTextAlignment?: TextAlignment;
+  onTextAlignmentChange?: (alignment: TextAlignment) => void;
+  // ---- Export -----------------------------------------------------------
+  /** Shows the Export button. Set false to hide it. */
+  exportable?: boolean;
+  /** Download name. The format extension is added when it is missing. */
+  exportFileName?: string;
+
   // ---- Pagination / scrolling -------------------------------------------
   pagination?: 'pages' | 'scroll';
   page?: number;
@@ -343,6 +528,21 @@ export interface ReactDataGridProps<TRow = Record<string, unknown>> {
    * The parent updates `data` or sends the value to an API. Escape and blur do not call this.
    */
   onCellEdit?: (edit: CellEdit<TRow>) => void;
+  /**
+   * Right-click a row to view, edit, or delete that record.
+   * Off unless set, so the browser menu stays available on other grids.
+   */
+  enableRowContextMenu?: boolean;
+  /**
+   * Called when the edit dialog is saved with valid values.
+   * The host updates `data` or sends `nextRow` to an API. Cancel does not call this.
+   */
+  onRowEdit?: (edit: RowEdit<TRow>) => void;
+  /**
+   * Called when delete is confirmed.
+   * The host removes the row or calls an API. Choosing No does not call this.
+   */
+  onRowDelete?: (row: TRow, rowId: RowId) => void;
 
   // ---- Columns / persistence --------------------------------------------
   columnState?: ColumnStateItem[];

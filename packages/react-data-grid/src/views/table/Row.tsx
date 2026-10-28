@@ -1,8 +1,10 @@
 import { memo, type CSSProperties, type MouseEvent } from 'react';
 import { POS_COL, POS_ROW } from '../../a11y/useRovingFocus';
 import type { EffectiveColumn } from '../../core/columnState';
+import { useConditionalFormats } from '../../conditional/FormatContext';
 import { useGrid } from '../../state/GridContext';
 import { isInteractiveTarget } from '../cellContent';
+import { handleRowContextMenu } from '../rowContextMenu';
 import { SelectCheckbox } from '../SelectCheckbox';
 import { Cell } from './Cell';
 
@@ -37,6 +39,7 @@ export const Row = memo(function Row({
     tabIndex: col === activeCol ? 0 : -1,
   });
   const ctx = useGrid();
+  const formats = useConditionalFormats(rowIndex);
   const { selection } = ctx;
   const id = ctx.rowIds[rowIndex]!;
   const hasSelect = selection.mode !== 'none';
@@ -65,6 +68,7 @@ export const Row = memo(function Row({
       aria-selected={hasSelect ? selected : undefined}
       aria-disabled={hasSelect && !selectable ? true : undefined}
       data-selected={selected || undefined}
+      data-formatted={formats.rowStyle ? true : undefined}
       data-row-id={id}
       data-depth={depth > 0 ? depth : undefined}
       style={
@@ -72,7 +76,11 @@ export const Row = memo(function Row({
           ? ({ '--aits-group-indent': `${depth * 16}px` } as CSSProperties)
           : undefined
       }
+      style={formats.rowStyle}
       onClick={onClick}
+      onContextMenu={(event) =>
+        handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)
+      }
     >
       {hasSelect && (
         <div
@@ -80,7 +88,8 @@ export const Row = memo(function Row({
           className="aits-cell aits-select-cell"
           aria-colindex={1}
           data-pinned="start"
-          style={selectStyle}
+          data-formatted={formats.rowStyle ? true : undefined}
+          style={formats.rowStyle ? { ...selectStyle, ...formats.rowStyle } : selectStyle}
           {...itemProps(0)}
         >
           <SelectCheckbox
@@ -99,6 +108,7 @@ export const Row = memo(function Row({
           ariaColIndex={i + 1 + offset}
           itemProps={itemProps(i + offset)}
           style={cellStyles[i]}
+          formatStyle={formats.mergedCellStyle(column.id)}
         />
       ))}
     </div>
