@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { applyColumnState, moveRowGroup, setColumnRowGroup } from '../../src/core/columnState';
+import {
+  applyColumnState,
+  moveRowGroup,
+  placeRowGroup,
+  setColumnRowGroup,
+  snapshotState,
+} from '../../src/core/columnState';
 import { resolveColumns } from '../../src/core/columns';
 import {
   buildGroupedItems,
@@ -256,5 +262,164 @@ describe('row grouping', () => {
     ]);
     const cleared = setColumnRowGroup(applyColumnState(columns, removed).ordered, removed, 'country', false);
     expect(resolveGroupColumns(applyColumnState(columns, cleared).ordered)).toEqual([]);
+  });
+
+  it('leaves the given indexes in place when no column is grouped', () => {
+    const indexes = [3, 1, 0];
+    const result = grouped(people, [{ field: 'name' }], {
+      indexes,
+      sort: [{ columnId: 'name', direction: 'asc' }],
+    });
+    expect(result.items).toEqual([
+      { kind: 'data', index: 3, depth: 0 },
+      { kind: 'data', index: 1, depth: 0 },
+      { kind: 'data', index: 0, depth: 0 },
+    ]);
+    expect(result.visibleLeafIndexes).toEqual([3, 1, 0]);
+    expect(indexes).toEqual([3, 1, 0]);
+  });
+
+  it('uses column order when grouped columns share a level', () => {
+    const result = grouped(people, [
+      { field: 'department', rowGroup: true, rowGroupIndex: 0 },
+      { field: 'country', rowGroup: true, rowGroupIndex: 0 },
+    ]);
+    expect(
+      result.items.filter((item) => item.kind === 'group' && item.depth === 0).map((item) => item.columnId),
+    ).toEqual(['department', 'department']);
+  });
+
+  it('sorts a non-sortable group column and keeps the blank group last', () => {
+    const rows = [
+      { country: 'USA', name: 'John' },
+      { country: null, name: 'Blank' },
+      { country: 'India', name: 'Priya' },
+    ];
+    const defs: ColumnDef<Row>[] = [{ field: 'country', rowGroup: true, sortable: false }];
+    const ascending = grouped(rows, defs);
+    expect(shownText(rows, ascending.items, defs)).toEqual(['India', 'Priya', 'USA', 'John', '(Blank)', 'Blank']);
+
+    const descending = grouped(rows, defs, { sort: [{ columnId: 'country', direction: 'desc' }] });
+    expect(shownText(rows, descending.items, defs)).toEqual(['USA', 'John', 'India', 'Priya', '(Blank)', 'Blank']);
+  });
+
+  it('keeps the full leaf count while a collapsed group hides its rows', () => {
+    const result = grouped(people, [{ field: 'country', rowGroup: true }], { collapsed: ['country=s:USA'] });
+    const usa = result.items.find((item) => item.kind === 'group' && item.key === 'country=s:USA');
+    expect(usa && usa.kind === 'group' && usa.expanded).toBe(false);
+    expect(usa && usa.kind === 'group' && usa.count).toBe(3);
+    expect(result.visibleLeafIndexes.map((index) => people[index]!.name)).toEqual(['Priya']);
+  });
+
+  it('groups currency, percent, bigint, dates, and arrays by value', () => {
+    const rows = [
+      { amount: 10, rate: 0.1, qty: 2n, tags: ['a', 'b'], n: 0, when: new Date(Number.NaN), odd: Number.NaN },
+      { amount: '10', rate: '0.1', qty: 2n, tags: ['a', 'b'], n: -0, when: null, odd: Number.POSITIVE_INFINITY },
+      { amount: 11, rate: 0.2, qty: 3n, tags: ['b', 'a'], n: 1, when: 'not-a-date', odd: null },
+    ];
+    const counts = (field: string, type?: ColumnDef<Row>['type']) =>
+      grouped(rows, [{ field, type, rowGroup: true }]).items
+        .filter((item) => item.kind === 'group')
+        .map((item) => (item.kind === 'group' ? item.count : 0));
+
+    expect(counts('amount', 'currency')).toEqual([2, 1]);
+    expect(counts('rate', 'percent')).toEqual([2, 1]);
+    expect(counts('qty')).toEqual([2, 1]);
+    expect(counts('tags')).toEqual([2, 1]);
+    expect(counts('n', 'number')).toEqual([2, 1]);
+    expect(counts('when', 'date')).toEqual([3]);
+    expect(counts('odd', 'number')).toEqual([3]);
+
+    const blank = [{ v: Symbol('a') }, { v: () => 1 }, { v: null }];
+    expect(grouped(blank, [{ field: 'v', rowGroup: true }]).items.filter((item) => item.kind === 'group')).toHaveLength(1);
+  });
+
+  it('uses format for the label only', () => {
+    const defs: ColumnDef<Row>[] = [
+      {
+        field: 'country',
+        rowGroup: true,
+        format: (value) => (value == null || value === '' ? '' : `Region ${value}`),
+      },
+    ];
+    const result = grouped(people, defs);
+    expect(shownText(people, result.items, defs)).toEqual([
+      'Region India',
+      'Priya',
+      'Region USA',
+      'John',
+      'David',
+      'Sarah',
+    ]);
+    const column = resolveColumns(defs, people)[0]!;
+    expect(formatGroupValue('USA', column, people[0], { messages: defaultMessages }, '(Blank)')).toBe('Region USA');
+    expect(formatGroupValue(null, column, undefined, { messages: defaultMessages }, '(Blank)')).toBe('(Blank)');
+
+    const throwing = resolveColumns<Row>(
+      [{ field: 'country', format: () => { throw new Error('bad format'); } }],
+      people,
+    )[0]!;
+    expect(formatGroupValue('USA', throwing, people[0], { messages: defaultMessages }, '(Blank)')).toBe('(Blank)');
+  });
+
+  it('appends, inserts, and refuses grouping changes that do not apply', () => {
+    const rows = [{ country: 'USA', department: 'Sales', name: 'Ada' }];
+    const defs: ColumnDef<Row>[] = [
+      { field: 'country', rowGroup: true, rowGroupIndex: 0 },
+      { field: 'department', rowGroup: true, rowGroupIndex: 1 },
+      { field: 'name' },
+      { field: 'locked', groupable: false },
+    ];
+    const columns = resolveColumns(defs, rows);
+    const { ordered } = applyColumnState(columns, []);
+    const idsOf = (state: ReturnType<typeof setColumnRowGroup>) =>
+      resolveGroupColumns(applyColumnState(columns, state).ordered).map((column) => column.id);
+
+    const appended = setColumnRowGroup(ordered, [], 'name', true);
+    expect(idsOf(appended)).toEqual(['country', 'department', 'name']);
+    expect(appended.find((item) => item.id === 'name')).toMatchObject({ rowGroup: true, rowGroupIndex: 2 });
+
+    const inserted = placeRowGroup(ordered, appended, 'name', 'department');
+    expect(idsOf(inserted)).toEqual(['country', 'name', 'department']);
+
+    const removed = setColumnRowGroup(applyColumnState(columns, inserted).ordered, inserted, 'department', false);
+    expect(idsOf(removed)).toEqual(['country', 'name']);
+    expect(removed.find((item) => item.id === 'name')?.rowGroupIndex).toBe(1);
+    expect(removed.find((item) => item.id === 'department')).toMatchObject({ rowGroup: false });
+    expect(removed.find((item) => item.id === 'department')).not.toHaveProperty('rowGroupIndex');
+
+    expect(placeRowGroup(ordered, appended, 'locked', null)).toEqual(appended);
+    expect(placeRowGroup(ordered, appended, 'name', 'name')).toEqual(appended);
+    expect(placeRowGroup(ordered, appended, 'missing', null)).toEqual(appended);
+    expect(setColumnRowGroup(ordered, appended, 'missing', false)).toEqual(appended);
+    expect(idsOf(moveRowGroup(ordered, [], 'country', -1))).toEqual(['country', 'department']);
+    expect(idsOf(moveRowGroup(ordered, [], 'department', 1))).toEqual(['country', 'department']);
+    expect(idsOf(moveRowGroup(ordered, [], 'name', 1))).toEqual(['country', 'department']);
+  });
+
+  it('lets saved column state override the column definition', () => {
+    const rows = [{ country: 'USA', department: 'Sales' }];
+    const columns = resolveColumns<Row>(
+      [
+        { field: 'country', rowGroup: true, rowGroupIndex: 0 },
+        { field: 'department' },
+      ],
+      rows,
+    );
+    const overridden = applyColumnState(columns, [
+      { id: 'country', order: 1, rowGroup: false, rowGroupIndex: 3 },
+      { id: 'department', order: 2, rowGroup: true, rowGroupIndex: 4 },
+    ]);
+    expect(resolveGroupColumns(overridden.ordered).map((column) => column.id)).toEqual(['department']);
+    expect(overridden.ordered.find((column) => column.id === 'department')?.rowGroupIndex).toBe(4);
+    expect(overridden.ordered.find((column) => column.id === 'country')?.rowGroup).toBe(false);
+
+    const fromDefinition = applyColumnState(columns, [{ id: 'country', order: 1, width: 140 }]);
+    expect(resolveGroupColumns(fromDefinition.ordered).map((column) => column.id)).toEqual(['country']);
+    expect(snapshotState(fromDefinition.ordered, [{ id: 'country', order: 1, width: 140 }])).toEqual([
+      expect.objectContaining({ id: 'country', order: 1, width: 140, rowGroup: true, rowGroupIndex: 0 }),
+      expect.objectContaining({ id: 'department', order: 2, rowGroup: false }),
+    ]);
+    expect(snapshotState(fromDefinition.ordered, [])[1]).not.toHaveProperty('rowGroupIndex');
   });
 });

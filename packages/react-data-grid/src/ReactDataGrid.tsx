@@ -674,17 +674,6 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
       style={rootStyle}
     >
       <GridContext.Provider value={ctx as GridContextValue}>
-        {showToolbar && <Toolbar />}
-        <RowGroupPanel />
-        {error !== undefined && error !== null && error !== false && (
-          <ErrorState error={error} retry={server.retry} />
-        )}
-        <div className="aits-body" data-loading={loading || undefined}>
-          {content}
-          {loading && hasRows && <LoadingOverlay skeleton={false} />}
-        </div>
-        {showPagination && <Pagination />}
-        <LiveRegion message={liveMessage} />
         <ConditionalFormatProvider
           rules={formatRules}
           setRules={setFormatRules}
@@ -694,6 +683,7 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
           setTextAlignment={setTextAlignment}
         >
           {showToolbar && <Toolbar />}
+          <RowGroupPanel />
           {error !== undefined && error !== null && error !== false && (
             <ErrorState error={error} retry={server.retry} />
           )}

@@ -23,7 +23,6 @@ export function TableView() {
   const ctx = useGrid();
   const { visibleColumns, displayItems, selection, columnActions, messages, rtl } = ctx;
   const { headerStyle, textAlignment } = useConditionalFormat();
-  const { visibleColumns, displayIndexes, selection, columnActions, messages, rtl } = ctx;
   const headerCss = useMemo(() => headerStyleToCss(headerStyle), [headerStyle]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);

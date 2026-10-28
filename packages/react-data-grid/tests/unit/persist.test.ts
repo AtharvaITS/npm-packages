@@ -75,6 +75,38 @@ describe('persist', () => {
     expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })).toEqual(full);
   });
 
+  it('round-trips row grouping on saved columns', () => {
+    writePersisted('emp', {
+      ...full,
+      columns: [
+        { id: 'name', order: 1, rowGroup: true, rowGroupIndex: 0 },
+        { id: 'age', order: 2, rowGroup: false },
+      ],
+    });
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.columns).toEqual([
+      { id: 'name', order: 1, rowGroup: true, rowGroupIndex: 0 },
+      { id: 'age', order: 2, rowGroup: false },
+    ]);
+  });
+
+  it('keeps grouping when a legacy column order is migrated and drops invalid grouping fields', () => {
+    localStorage.setItem(
+      STORAGE_PREFIX + 'emp',
+      JSON.stringify({
+        v: 1,
+        columns: [
+          { id: 'name', order: 0, rowGroup: true, rowGroupIndex: null },
+          { id: 'age', order: 1, rowGroup: 'yes', rowGroupIndex: 2 },
+          { id: 'missing', order: 2, rowGroup: true, rowGroupIndex: 1 },
+        ],
+      }),
+    );
+    expect(readPersisted('emp', { ...ctx, views: [...ctx.views] })!.columns).toEqual([
+      { id: 'name', order: 1, rowGroup: true },
+      { id: 'age', order: 2, rowGroupIndex: 2 },
+    ]);
+  });
+
   it('reads a saved 0-based column order as a column number', () => {
     writePersisted('emp', {
       ...full,

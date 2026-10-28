@@ -136,12 +136,11 @@ export function snapshotState(
     const prev = byId.get(c.id);
     const item: ColumnStateItem = {
       id: c.id,
-      order,
+      order: index + 1,
       hidden: c.hidden,
       pinned: c.pinned,
       rowGroup: c.rowGroup,
     };
-    const item: ColumnStateItem = { id: c.id, order: index + 1, hidden: c.hidden, pinned: c.pinned };
     if (prev?.width !== undefined) item.width = prev.width;
     if (c.rowGroup && c.rowGroupIndex !== undefined) item.rowGroupIndex = c.rowGroupIndex;
     return item;

@@ -235,22 +235,6 @@ export function readPersisted(
     result.pageSize = Math.floor(parsed.pageSize);
   }
   if (Array.isArray(parsed.columns)) {
-    result.columns = parsed.columns
-      .filter((c: any) => c && typeof c.id === 'string' && ids.has(c.id))
-      .map((c: any) => {
-        const item: ColumnStateItem = {
-          id: c.id,
-          order: typeof c.order === 'number' ? c.order : 0,
-        };
-        if (typeof c.width === 'number' && Number.isFinite(c.width)) item.width = c.width;
-        if (typeof c.hidden === 'boolean') item.hidden = c.hidden;
-        if (c.pinned === 'start' || c.pinned === 'end' || c.pinned === null) item.pinned = c.pinned;
-        if (typeof c.rowGroup === 'boolean') item.rowGroup = c.rowGroup;
-        if (typeof c.rowGroupIndex === 'number' && Number.isFinite(c.rowGroupIndex)) {
-          item.rowGroupIndex = c.rowGroupIndex;
-        }
-        return item;
-      });
     result.columns = migrateLegacyColumnOrders(
       parsed.columns
         .filter((c: any) => c && typeof c.id === 'string' && ids.has(c.id))
@@ -262,6 +246,10 @@ export function readPersisted(
           if (typeof c.width === 'number' && Number.isFinite(c.width)) item.width = c.width;
           if (typeof c.hidden === 'boolean') item.hidden = c.hidden;
           if (c.pinned === 'start' || c.pinned === 'end' || c.pinned === null) item.pinned = c.pinned;
+          if (typeof c.rowGroup === 'boolean') item.rowGroup = c.rowGroup;
+          if (typeof c.rowGroupIndex === 'number' && Number.isFinite(c.rowGroupIndex)) {
+            item.rowGroupIndex = c.rowGroupIndex;
+          }
           return item;
         }),
     );
