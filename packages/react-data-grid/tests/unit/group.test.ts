@@ -285,7 +285,7 @@ describe('row grouping', () => {
       { field: 'country', rowGroup: true, rowGroupIndex: 0 },
     ]);
     expect(
-      result.items.filter((item) => item.kind === 'group' && item.depth === 0).map((item) => item.columnId),
+      result.items.flatMap((item) => (item.kind === 'group' && item.depth === 0 ? [item.columnId] : [])),
     ).toEqual(['department', 'department']);
   });
 

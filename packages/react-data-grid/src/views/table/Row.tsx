@@ -73,10 +73,9 @@ export const Row = memo(function Row({
       data-depth={depth > 0 ? depth : undefined}
       style={
         depth > 0
-          ? ({ '--aits-group-indent': `${depth * 16}px` } as CSSProperties)
-          : undefined
+          ? ({ ...formats.rowStyle, '--aits-group-indent': `${depth * 16}px` } as CSSProperties)
+          : formats.rowStyle
       }
-      style={formats.rowStyle}
       onClick={onClick}
       onContextMenu={(event) =>
         handleRowContextMenu(event, ctx.enableRowContextMenu, rowIndex, ctx.openRowMenu)
