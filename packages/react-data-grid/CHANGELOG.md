@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.9
+
+### Patch Changes
+
+- "add row grouping featre"
+
 ## 1.0.8
 
 ### Patch Changes
