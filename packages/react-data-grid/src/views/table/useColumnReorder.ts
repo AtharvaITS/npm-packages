@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type DragEvent } from 'react';
 
-const MIME = 'application/x-aits-grid-column';
+export const COLUMN_DRAG_MIME = 'application/x-aits-grid-column';
 
 /** HTML5 drag-and-drop between header cells (FR-037). */
 export function useColumnReorder(options: {
@@ -24,7 +24,7 @@ export function useColumnReorder(options: {
           setDragging(id);
           event.dataTransfer.effectAllowed = 'move';
           try {
-            event.dataTransfer.setData(MIME, id);
+            event.dataTransfer.setData(COLUMN_DRAG_MIME, id);
             event.dataTransfer.setData('text/plain', id);
           } catch {
             // some environments restrict dataTransfer
@@ -39,7 +39,7 @@ export function useColumnReorder(options: {
         onDragLeave: () => setOver((o) => (o === id ? null : o)),
         onDrop: (event: DragEvent) => {
           event.preventDefault();
-          const from = draggingRef.current ?? event.dataTransfer.getData(MIME);
+          const from = draggingRef.current ?? event.dataTransfer.getData(COLUMN_DRAG_MIME);
           draggingRef.current = null;
           setDragging(null);
           setOver(null);

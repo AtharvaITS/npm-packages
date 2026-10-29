@@ -7,7 +7,7 @@ import { ChevronIcon } from '../views/icons';
 /** Page navigation + page size (FR-022). */
 export function Pagination() {
   const ctx = useGrid();
-  const { api, messages, totalCount } = ctx;
+  const { api, messages, displayTotal: totalCount } = ctx;
   const { page, pageSize } = api.state;
   const id = useId();
   const pages = pageCount(totalCount, pageSize);
