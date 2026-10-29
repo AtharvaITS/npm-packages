@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.10
+
+### Patch Changes
+
+- add aggregation feature
+
 ## 1.0.9
 
 ### Patch Changes
