@@ -4,7 +4,9 @@
 [![CI](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml/badge.svg)](https://github.com/AtharvaITS/npm-packages/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@atharvaits/react-data-grid)](./LICENSE)
 
-> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, row grouping, group totals, paging or virtual scrolling (100,000+ rows), selection, column management, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
+
+
+> **ReactDataGrid**: show any array of records as a **table**, a **card grid**, or a **list** — with sorting, search, filters, row grouping, conditional formatting, header styling, Text allignment, paging or virtual scrolling (100,000+ rows), selection, a row context menu, selection, export, column management, row grouping,, saved preferences, theming, localization, full keyboard and screen-reader support, and safe server rendering.
 
 - **Zero required configuration** — pass `data`, get a readable table.
 - **No runtime dependencies** besides React (≥ 18). About 38 KB gzipped, JS + CSS.
@@ -29,6 +31,26 @@
 15. [Server-side rendering](#server-side-rendering)
 16. [Browser support](#browser-support)
 17. [Props reference](#props-reference)
+6. [Pagination and scrolling](#pagination-and-scrolling)
+7. [Server (host-managed) mode](#server-host-managed-mode)
+8. [Selection and activation](#selection-and-activation)
+5. [Conditional formatting, header style and text alignment](#conditional-formatting)
+6. [Server (host-managed) mode](#server-host-managed-mode)
+7. [Selection and activation](#selection-and-activation)
+8. [Row context menu](#row-context-menu)
+6. [Pagination and scrolling](#pagination-and-scrolling)
+
+8. [Export options](#export-options)
+9. [Column management and saved preferences](#column-management-and-saved-preferences)
+10. [Theming](#theming)
+11. [Localization and right-to-left](#localization-and-right-to-left)
+12. [Empty, no-results, loading and error content](#empty-no-results-loading-and-error-content)
+13. [Accessibility](#accessibility)
+14. [Server-side rendering](#server-side-rendering)
+15. [Browser support](#browser-support)
+16. [Props reference](#props-reference)
+17. [Inline cell editing](#inline-cell-editing)
+
 
 ---
 
@@ -54,7 +76,10 @@ export function People() {
 }
 ```
 
-That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, a column chooser, pagination and a table/grid/list switcher.
+
+
+
+That renders a table with the headers **First Name**, **Last Name**, **Born** and **Active**, locale-formatted dates, ✓/✗ for booleans, search, filters, conditional formatting,header style,text alignment, a column chooser, export, pagination and a table/grid/list switcher.
 
 What the zero-config defaults handle for you:
 
@@ -88,12 +113,45 @@ The component **never modifies** the array you pass.
 />
 ```
 
-Controlled view:
+Both snippets show a table, cards, or a list. The difference is **who remembers** the choice.
+
+Use `defaultView` when the grid’s own toolbar buttons are enough. You tell it the start, then it remembers by itself:
+
+```tsx
+<ReactDataGrid data={products} defaultView="grid" />
+```
+
+1. Page opens → cards.
+2. User clicks **Table** on the grid toolbar → table.
+3. Your other code never hears about it. That is fine if nothing else on the page cares.
+
+Use `view` + `onViewChange` when a button **you** wrote, outside the grid, must switch it. Imagine this page:
+
+```text
+[ Show as cards ]          ← your button, not the grid’s
+Table                      ← a title that must match the view
+┌──────────────────────┐
+│  grid (table now)    │
+└──────────────────────┘
+```
+
+`defaultView` cannot do this. It has no handle your button can pull. Keep the choice in `view` so the button, the title, and the grid all share it:
 
 ```tsx
 const [view, setView] = useState<ViewType>('table');
+
+<h2>{view === 'grid' ? 'Cards' : 'Table'}</h2>
+<button onClick={() => setView('grid')}>Show as cards</button>
+<ReactDataGrid data={products} view={view} onViewChange={setView} />
+const [view, setView] = useState<ViewType>('table');//if you use react +js remove this <ViewType>
 <ReactDataGrid data={rows} view={view} onViewChange={setView} />;
 ```
+
+1. Page opens → `view` is `'table'` → title says **Table**, grid is a table.
+2. User clicks **your** “Show as cards” button → `setView('grid')` → title says **Cards**, grid becomes cards.
+3. User then clicks **List** on the grid toolbar → `onViewChange` calls `setView('list')` → title stays in step with the grid.
+
+`onViewChange={setView}` is the line that connects the grid’s toolbar back to your `view`. Without it, step 3 snaps the grid back to table, because `view` is still `'table'`.
 
 Custom layouts keep the component's focus handling, roles and selection:
 
@@ -164,7 +222,7 @@ const columns = createColumns<Employee>([
 | `header` | Header / label text | humanized field (`firstName` → “First Name”) |
 | `type` | `auto`, `text`, `number`, `currency`, `percent`, `boolean`, `date`, `image`, `enum` | `auto` (inferred; strings are never inferred as numbers/dates) |
 | `valueGetter(row)` | Derived value used for display, sort, filter and search | — |
-| `valueSetter(row, value)` | Row to commit after a double-click edit. Required to edit a `valueGetter` column; the grid reports it as `onCellEdit` `nextRow` | — |
+| `valueSetter(row, value)` | Row to commit after an edit. Required to edit a `valueGetter` column. A cell edit reports it as `onCellEdit` `nextRow`. A row-menu edit applies it into `onRowEdit` `nextRow` when that field changed | — |
 | `format(value, row)` | Display text only — sort/filter/search still use the raw value | locale-aware per type |
 | `formatOptions` | `Intl` options, e.g. `{ currency: 'EUR' }`, `{ dateStyle: 'long' }` | — |
 | `render(ctx)` | Custom content in every view. `ctx`: `row, rowId, value, formattedValue, column, view, selected` | — |
@@ -260,6 +318,85 @@ USA
 - Server mode skips browser grouping, because the grid only holds the current page. A development warning is logged when a column sets `rowGroup`. Group on the host if the page should arrive already grouped.
 
 Messages: `groupByColumn`, `ungroupColumn`, `moveGroupUp`, `moveGroupDown`, `blankGroup`, `groupCount(count)`.
+## Conditional formatting
+
+The toolbar **Format** button opens a panel to add, edit, and delete rules, and to open **Header Style** and **Text Alignment**. A matching rule paints a cell or the whole row with a background, text color, font weight, and font style. The same rules apply in the table, grid, and list views. Header style paints the table header only. Text alignment aligns every header and every data cell in the table.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  conditionalFormatting // show the Format button (default true)
+  defaultFormatRules={[
+    {
+      id: 'high',
+      columnId: 'amount',
+      operator: 'gte',
+      value: '10000',
+      scope: 'row',
+      style: { backgroundColor: '#dcfce7', fontWeight: '700' },
+    },
+  ]}
+  onFormatRulesChange={(rules) => save(rules)}
+/>
+```
+
+Hide the button and still apply rules you pass in:
+
+```tsx
+<ReactDataGrid data={rows} conditionalFormatting={false} formatRules={rules} />
+```
+
+- Operators: `equal`, `notEqual`, `contains`, `notContains`, `startsWith`, `endsWith`, `isEmpty`, `isNotEmpty`, `lt`, `lte`, `gt`, `gte`, `between`, `notBetween`.
+- `isEmpty` and `isNotEmpty` take no value. `between` and `notBetween` use `value` and `value2`.
+- Scope `cell` paints that column. Scope `row` paints the whole row.
+- Later rules override earlier ones on the same property. A cell rule overrides a row rule on that property.
+- Controlled: `formatRules` + `onFormatRulesChange`.
+
+### Header style
+
+**Header Style** in the Format panel opens a dialog for the table header. **Apply** stores the style, shows it in the Format panel, and returns there. **Cancel** discards the edits in that dialog. The saved style is listed like a conditional formatting rule, with **Edit** and **Delete**.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  defaultHeaderStyle={{
+    backgroundColor: '#1e293b',
+    textColor: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  }}
+  onHeaderStyleChange={(style) => save(style)}
+/>
+```
+
+- Background and text color can be picked whether or not the checkbox is checked. A chosen color is applied in either case. Leave a color unset to keep the current header color.
+- `fontSize` is a number of pixels. Leave it unset to keep the current size. Zero and negative values are rejected.
+- `fontWeight`: `default`, `italic`, `bold`. `default` keeps the current header weight. A saved `600` or `700` is read as `bold`.
+- `textTransform`: `default`, `uppercase`, `lowercase`, `capitalize`. `default` keeps the current text. The column header string itself does not change.
+- Controlled: `headerStyle` + `onHeaderStyleChange`.
+- `conditionalFormatting={false}` hides the Format button. A `headerStyle` you pass in still applies.
+
+### Text alignment
+
+**Text Alignment** in the Format panel opens a dialog with **Left**, **Center**, and **Right**. Only one option is active. **Apply** stores that alignment for the whole table, shows it in the Format panel as **Text Alignment: Center** (or Left or Right), and returns there. **Cancel** discards the selection in that dialog. The saved alignment is listed like a conditional formatting rule, with **Edit** and **Delete**.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  defaultTextAlignment={{ alignment: 'center' }}
+  onTextAlignmentChange={(alignment) => save(alignment)}
+/>
+```
+
+- `alignment`: `left`, `center`, or `right`. One value applies to every header cell and every data cell in every column.
+- Leave `alignment` unset (`{}`) to keep each column's own alignment. Numeric columns stay at the end; other columns stay at the start, unless a column sets `align`.
+- **Edit** opens the dialog with the current alignment selected and updates that same rule.
+- **Delete** removes the rule and restores each column's own alignment.
+- Controlled: `textAlignment` + `onTextAlignmentChange`.
+- `conditionalFormatting={false}` hides the Format button. A `textAlignment` you pass in still applies.
+
+`persistStateKey` saves formatting rules, header style, and text alignment with the other grid preferences. A deleted rule, header style, or text alignment stays deleted after refresh. Controlled `formatRules`, `headerStyle`, and `textAlignment` still win over the saved copy.
 
 Numeric totals on those group rows are covered in [Aggregation](#aggregation).
 
@@ -389,6 +526,64 @@ While loading, a spinner shows over the current rows. On error, a banner with **
 
 ---
 
+## Row context menu
+
+Off unless you set `enableRowContextMenu`. Right-click a row in the table, card grid, or list to open **View**, **Edit**, and **Delete** for that record. The browser menu is replaced only on those rows. The menu opens next to the pointer, stays inside the viewport, and only one menu is open at a time. It closes when you choose an action, click outside, press Escape, or right-click another row. Shift+F10 or the context-menu key opens it for the focused row.
+
+The actions use the row you right-clicked, not the currently selected row.
+
+```tsx
+const [rows, setRows] = useState(employees);
+
+<ReactDataGrid
+  data={rows}
+  columns={columns}
+  getRowId="id"
+  enableRowContextMenu
+  onRowEdit={(edit) => {
+    // edit: { row, rowId, nextRow }. Update local state, or send nextRow to your API.
+    setRows((current) => current.map((row) => (row.id === edit.rowId ? edit.nextRow : row)));
+  }}
+  onRowDelete={(row, rowId) => {
+    // Delete through your API, then drop the row from data.
+    setRows((current) => current.filter((item) => item.id !== rowId));
+  }}
+/>
+```
+
+- **View** opens a read-only dialog of the visible columns. Labels and values come from the same columns the grid displays. **Close**, Escape, or the backdrop dismisses it. Nothing is saved.
+- **Edit** opens a form filled from that row. **Save** checks the values, then calls `onRowEdit` with `{ row, rowId, nextRow }` and closes. **Cancel**, Escape, or the backdrop throws the form away and does not call `onRowEdit`. An invalid number or date stays open and shows “Enter a valid value.”
+- **Delete** asks you to confirm. **Yes** calls `onRowDelete(row, rowId)`. **No**, Escape, or the backdrop leaves the row in place and does not call `onRowDelete`.
+
+The grid does not write `data` and does not call your database. Your app updates the list, or calls an API inside those two handlers and then updates `data` from the response.
+
+Fields follow the visible columns. Hidden columns are omitted. A column is editable when it has a `field` and no `valueGetter`, or when it has a `valueSetter`. Columns with a custom `render` are shown in View and are not inputs in the edit form. Image columns are shown in View and are left unchanged by Save; double-click a cell to edit one. A `valueSetter` runs only for a field the user actually changed.
+
+Labels (**View**, **Edit**, **Delete**, **Details**, **Edit record**, **Confirm delete**, and the confirmation text) come from `messages`.
+
+## Export options
+
+The toolbar **Export** button opens a dialog. Pick what to export and a format, then the grid downloads the file. Cell text matches what the grid shows (locale dates, currency, booleans, and column `format` functions).
+
+| Scope | Rows | Columns |
+|---|---|---|
+| Current Table View | Every row matching the current search, filters, and sort | All columns, including hidden ones, of every type |
+| All Data | Every source row, in the original order, ignoring search and filters | All columns, including hidden ones, of every type |
+| Current Page | The rows on the current page | All columns, including hidden ones, of every type |
+| Selected Rows | The current selection. A selected row that is hidden by search or filters is still included. | All columns, including hidden ones, of every type |
+
+Formats are **CSV** (UTF-8 with BOM), **Excel** (`.xlsx`), and **PDF** (landscape A4). In scroll mode there is no page, so Current Page exports the same rows as Current Table View. In server mode only the rows loaded in the grid can be exported.
+
+```tsx
+<ReactDataGrid
+  data={rows}
+  exportable // default true; false hides the button
+  exportFileName="orders" // downloads orders.csv, orders.xlsx, or orders.pdf
+/>
+```
+
+---
+
 ## Column management and saved preferences
 
 In the table view, users can resize columns (drag the header edge, or Alt+←/→), reorder them (drag a header, or **Move left/right** in the column menu), hide or show them (column menu or **Columns** button), and pin them to the start or end. Hidden columns and column order also apply to the grid and list views. With `enableRowGrouping`, drag a column header onto the row group bar to group. See [Row grouping](#row-grouping).
@@ -402,12 +597,13 @@ In the table view, users can resize columns (drag the header edge, or Alt+←/�
   enableColumnPin // all default true
   defaultColumnState={[{ id: 'notes', order: 5, hidden: true }]}
   onColumnStateChange={(state) => save(state)}
-  persistStateKey="orders-grid" // remember view, sort, page size and column layout in localStorage
+  persistStateKey="orders-grid" // remember view, sort, page size, column layout, formatting rules, header style and text alignment
   onStateChange={(state, changed) => console.log(changed, state)}
 />
 ```
 
 Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns and disallowed views are ignored. The saved column layout includes width, order, visibility, pinning, and row grouping (`rowGroup`, `rowGroupIndex`). Selection, search, filters, page, and which groups are expanded are never saved. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
+Saved preferences live under `localStorage["@atharvaits/react-data-grid:<key>"]`. They are validated when loaded: unknown columns, invalid rules, invalid alignments, and disallowed views are ignored. Selection, search, filters, and page are never saved. Formatting rules, header style, and text alignment are saved. Deleting a rule, the header style, or the text alignment writes that empty result, so a refresh does not bring it back. If storage is unavailable, preferences are kept in memory only. Controlled props always take precedence over saved values.
 
 ---
 
@@ -487,11 +683,69 @@ The component targets **WCAG 2.2 AA**. It follows the WAI-ARIA grid, listbox and
 | List view | ↑/↓ · Home/End · PageUp/PageDown |
 | Any record | Enter = activate (`onRowActivate`) · Space = select · Shift+Space = select range · Ctrl/⌘+A = select all |
 | Group row | Enter or Space expands or collapses that group |
+| Any record | Enter = activate (`onRowActivate`) · Space = select · Shift+Space = select range · Ctrl/⌘+A = select all · Shift+F10 or the context-menu key opens the row menu when `enableRowContextMenu` is set |
 | Table header | Enter/Space = sort (Shift = add to multi-sort) · Alt+↓ or Shift+F10 = column menu · Alt+←/→ = resize |
 | View switcher | ←/→ (↑/↓) · Home/End |
 | Menus / dialogs | ↑/↓ in menus · Esc closes and returns focus |
 
 ---
+## Inline cell editing
+
+Double-click a cell to edit it. The grid does not write the new value into `data`. `onCellEdit` tells you what changed, and you update your state (or send it to an API). Editing is off until you pass `onCellEdit`.
+
+```tsx
+type Person = { id: string; name: string; city: string; active: boolean; qty: number };
+
+const [people, setPeople] = useState<Person[]>([
+  { id: '1', name: 'Ada', city: 'London', active: true, qty: 2 },
+]);
+
+<ReactDataGrid
+  data={people}
+  getRowId="id"
+  onCellEdit={(edit) => {
+    setPeople((current) =>
+      current.map((row) => {
+        if (row.id !== edit.rowId) return row;
+        // valueSetter columns already return the next row. Field columns use edit.field.
+        return edit.nextRow ?? { ...row, [edit.field]: edit.value };
+      }),
+    );
+  }}
+/>
+```
+
+**How to edit**
+
+1. Double-click the cell in the table, or the same field on a card or list item.
+2. Change the value. Text and numbers use a text box (numbers use a decimal keypad on mobile). Dates that are `Date` objects or `YYYY-MM-DD` strings use a date input. Booleans use a checkbox. Columns with `enumValues` use a dropdown.
+3. Press Enter to save. Press Escape, or move focus away, to cancel. A cancelled edit does not call `onCellEdit`.
+4. An invalid number (for example `abc` in a number column) is discarded and `onCellEdit` is not called.
+
+**Which columns can be edited**
+
+- A column with `field` and no `valueGetter` and no `render`.
+- A `valueGetter` column only when it also has `valueSetter`. The callback receives `nextRow` from `valueSetter`.
+- A column with `render` is never edited.
+
+```tsx
+{
+  id: 'label',
+  header: 'Label',
+  valueGetter: (row) => `${row.name} (${row.city})`,
+  valueSetter: (row, value) => {
+    const text = String(value ?? '');
+    const match = /^(.*)\(([^()]*)\)\s*$/.exec(text);
+    if (!match) return { ...row, name: text.trim() };
+    return { ...row, name: match[1]!.trim(), city: match[2]!.trim() };
+  },
+}
+```
+
+Double-click **Label**, change `Ada (London)` to `Grace (Paris)`, press Enter. `onCellEdit` includes `value: 'Grace (Paris)'` and `nextRow` with `name: 'Grace'` and `city: 'Paris'`. If you omit `valueSetter`, the double-click does nothing.
+
+---
+
 
 ## Server-side rendering
 
@@ -555,6 +809,21 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `filters` / `defaultFilters` / `onFiltersChange` | `FilterCondition[]` | `[]` |
 | `filterable` | `boolean` | `true` |
 
+### Conditional formatting, header style and text alignment
+
+| Prop | Type | Default |
+|---|---|---|
+| `conditionalFormatting` | `boolean` | `true` |
+| `formatRules` / `defaultFormatRules` / `onFormatRulesChange` | `ConditionalFormatRule[]` | `[]` |
+| `headerStyle` / `defaultHeaderStyle` / `onHeaderStyleChange` | `HeaderStyle` | `{}` |
+| `textAlignment` / `defaultTextAlignment` / `onTextAlignmentChange` | `TextAlignment` | `{}` |
+### Export
+
+| Prop | Type | Default |
+|---|---|---|
+| `exportable` | `boolean` | `true` |
+| `exportFileName` | `string` | `'export'` |
+
 ### Pagination and scrolling
 
 | Prop | Type | Default |
@@ -574,6 +843,9 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 | `isRowSelectable` | `(row) => boolean` | all rows |
 | `onRowActivate` | `(row, id, event) => void` | — |
 | `onCellEdit` | `(edit: { row, rowId, columnId, field, previousValue, value, nextRow? }) => void` | — |
+| `enableRowContextMenu` | `boolean` | `false` |
+| `onRowEdit` | `(edit: { row, rowId, nextRow }) => void` | — |
+| `onRowDelete` | `(row, rowId) => void` | — |
 
 ### Columns and persistence
 
@@ -598,7 +870,11 @@ All props are optional. For controllable state, `x` makes it controlled, `defaul
 
 ### Exports
 
-`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CellEdit`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, `SelectionMode`, `RowId`, `RowEdit`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
+
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, 
+`ReactDataGrid`, `createColumns`, `defaultMessages`, and the types `ReactDataGridProps`, `ColumnDef`, `ColumnType`, `CellContext`, `CardContext`, `CardField`, `ListItemContext`, `ViewType`, `SortItem`, `SortDirection`, `FilterCondition`, `FilterOperator`, 
+`ConditionalFormatRule`, `ConditionalFormatStyle`, `HeaderStyle`, `HeaderFontWeight`, `HeaderTextTransform`,`FormatOperator`, `FormatScope`, `FormatFontWeight`, `FormatFontStyle`,`TextAlignment`, `TextAlignValue`,`SelectionMode`, `RowId`, `GridState`, `ColumnStateItem`, `DataRequest`, `DataPage`, `FetchDataOptions`, `ExportScope`, `ExportFormat`, `Theme`, `ThemeToken`, `Density`, `ColorScheme`, `Messages`, `StateContent`, `StateContentContext`.
 
 ## License
 

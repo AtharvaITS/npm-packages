@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { deriveColumns, humanizeHeader, inferType, resolveColumns } from '../../src/core/columns';
+import { createColumns } from '../../src';
+import {
+  deriveColumns,
+  getColumnValue,
+  humanizeHeader,
+  inferType,
+  isEmptyValue,
+  resolveColumns,
+} from '../../src/core/columns';
 
 describe('humanizeHeader', () => {
   it.each([
@@ -128,5 +136,42 @@ describe('resolveColumns', () => {
     );
     expect(img!.searchable).toBe(false);
     expect(txt!.type).toBe('number');
+  });
+});
+
+describe('getColumnValue', () => {
+  it('reads a field path and prefers valueGetter', () => {
+    expect(getColumnValue({ address: { city: 'Oslo' } }, { field: 'address.city' })).toBe('Oslo');
+    expect(
+      getColumnValue({ n: 1 }, { field: 'n', valueGetter: (row: { n: number }) => row.n + 1 }),
+    ).toBe(2);
+  });
+
+  it('returns undefined when a getter throws or no field is set', () => {
+    expect(
+      getColumnValue({ n: 1 }, {
+        valueGetter: () => {
+          throw new Error('bad getter');
+        },
+      }),
+    ).toBeUndefined();
+    expect(getColumnValue({ n: 1 }, {})).toBeUndefined();
+  });
+});
+
+describe('isEmptyValue', () => {
+  it('treats null, undefined and empty string as empty', () => {
+    expect(isEmptyValue(null)).toBe(true);
+    expect(isEmptyValue(undefined)).toBe(true);
+    expect(isEmptyValue('')).toBe(true);
+    expect(isEmptyValue(0)).toBe(false);
+    expect(isEmptyValue(false)).toBe(false);
+  });
+});
+
+describe('createColumns', () => {
+  it('returns the same definitions so callers keep row inference', () => {
+    const defs = [{ field: 'name' as const }];
+    expect(createColumns(defs)).toBe(defs);
   });
 });

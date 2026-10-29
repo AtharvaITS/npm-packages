@@ -46,6 +46,10 @@ import {
 } from './state/GridContext';
 import { useGridState } from './state/useGridState';
 import { useIsomorphicLayoutEffect } from './state/useIsomorphicLayoutEffect';
+import { ConditionalFormatProvider } from './conditional/FormatContext';
+import { EMPTY_HEADER_STYLE } from './conditional/headerStyle';
+import { EMPTY_TEXT_ALIGNMENT } from './conditional/textAlignment';
+import { useControllableState } from './state/useControllableState';
 import { usePersistence } from './state/usePersistence';
 import { useServerData } from './state/useServerData';
 import { EmptyState } from './states/EmptyState';
@@ -54,13 +58,23 @@ import { LoadingOverlay } from './states/LoadingOverlay';
 import { NoResultsState } from './states/NoResultsState';
 import { RowGroupPanel } from './toolbar/RowGroupPanel';
 import { Toolbar } from './toolbar/Toolbar';
-import type { ReactDataGridProps, Density, RowId, ThemeToken } from './types';
+import type {
+  ReactDataGridProps,
+  ConditionalFormatRule,
+  Density,
+  HeaderStyle,
+  RowId,
+  TextAlignment,
+  ThemeToken,
+} from './types';
+import { RowActions, type RowDialogState, type RowMenuState } from './views/RowActions';
 import { GridView } from './views/grid/GridView';
 import { ListView } from './views/list/ListView';
 import { TableView } from './views/table/TableView';
 
 const ROW_HEIGHTS: Record<Density, number> = { compact: 32, standard: 40, comfortable: 52 };
 const EMPTY_IDS: RowId[] = [];
+const EMPTY_FORMAT_RULES: ConditionalFormatRule[] = [];
 
 function tokenToVar(token: string) {
   return '--aits-' + token.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
@@ -98,6 +112,23 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   // ---- State ---------------------------------------------------------------
   const api = useGridState(props, { warnKey });
   const { state } = api;
+  const [formatRules, setFormatRules, formatRulesControlled] = useControllableState<
+    ConditionalFormatRule[]
+  >({
+    value: props.formatRules,
+    defaultValue: props.defaultFormatRules ?? EMPTY_FORMAT_RULES,
+    onChange: props.onFormatRulesChange,
+  });
+  const [headerStyle, setHeaderStyle, headerStyleControlled] = useControllableState<HeaderStyle>({
+    value: props.headerStyle,
+    defaultValue: props.defaultHeaderStyle ?? EMPTY_HEADER_STYLE,
+    onChange: props.onHeaderStyleChange,
+  });
+  const [textAlignment, setTextAlignment, textAlignmentControlled] = useControllableState<TextAlignment>({
+    value: props.textAlignment,
+    defaultValue: props.defaultTextAlignment ?? EMPTY_TEXT_ALIGNMENT,
+    onChange: props.onTextAlignmentChange,
+  });
   const server = useServerData(
     props,
     {
@@ -132,7 +163,17 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     [columnsSource, rows, warnKey],
   );
   const columnIds = useMemo(() => resolved.map((c) => c.id), [resolved]);
-  usePersistence(props.persistStateKey, api, columnIds);
+  usePersistence(props.persistStateKey, api, columnIds, {
+    rules: formatRules,
+    setRules: setFormatRules,
+    rulesControlled: formatRulesControlled,
+    headerStyle,
+    setHeaderStyle,
+    headerStyleControlled,
+    textAlignment,
+    setTextAlignment,
+    textAlignmentControlled,
+  });
 
   const effective = useMemo(
     () => applyColumnState(resolved, state.columnState),
@@ -501,6 +542,31 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
   const cancelEdit = useCallback(() => {
     setEditing(null);
   }, []);
+
+  const enableRowContextMenu = props.enableRowContextMenu === true;
+  const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null);
+  const [rowDialog, setRowDialog] = useState<RowDialogState | null>(null);
+  const rowMenuAnchorRef = useRef<HTMLElement | null>(null);
+  const openRowMenu = useCallback(
+    (rowIndex: number, x: number, y: number, anchor: HTMLElement) => {
+      if (!enableRowContextMenu || rowDialog) return;
+      const rowId = rowIds[rowIndex];
+      if (rowId === undefined) return;
+      rowMenuAnchorRef.current = anchor;
+      setRowMenu({ rowId, x, y });
+    },
+    [enableRowContextMenu, rowDialog, rowIds],
+  );
+  const closeRowMenu = useCallback(() => setRowMenu(null), []);
+  const openRowDialog = useCallback((kind: RowDialogState['kind'], id: RowId) => {
+    setRowMenu(null);
+    setRowDialog({ kind, rowId: id });
+  }, []);
+  const closeRowDialog = useCallback(() => setRowDialog(null), []);
+  useEffect(() => {
+    if (rowMenu && !rowIds.includes(rowMenu.rowId)) setRowMenu(null);
+    if (rowDialog && !rowIds.includes(rowDialog.rowId)) setRowDialog(null);
+  }, [rowIds, rowMenu, rowDialog]);
   const commitEdit = useCallback(
     (draft: string | boolean) => {
       const current = editing;
@@ -571,6 +637,8 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
     startEdit,
     commitEdit,
     cancelEdit,
+    enableRowContextMenu,
+    openRowMenu,
     announce,
     rowHeight,
     scrollHeight: props.height === undefined || props.height === 'auto' ? 600 : props.height,
@@ -612,17 +680,36 @@ export function ReactDataGrid<TRow = Record<string, unknown>>(props: ReactDataGr
       style={rootStyle}
     >
       <GridContext.Provider value={ctx as GridContextValue}>
-        {showToolbar && <Toolbar />}
-        <RowGroupPanel />
-        {error !== undefined && error !== null && error !== false && (
-          <ErrorState error={error} retry={server.retry} />
-        )}
-        <div className="aits-body" data-loading={loading || undefined}>
-          {content}
-          {loading && hasRows && <LoadingOverlay skeleton={false} />}
-        </div>
-        {showPagination && <Pagination />}
-        <LiveRegion message={liveMessage} />
+        <ConditionalFormatProvider
+          rules={formatRules}
+          setRules={setFormatRules}
+          headerStyle={headerStyle}
+          setHeaderStyle={setHeaderStyle}
+          textAlignment={textAlignment}
+          setTextAlignment={setTextAlignment}
+        >
+          {showToolbar && <Toolbar />}
+          <RowGroupPanel />
+          {error !== undefined && error !== null && error !== false && (
+            <ErrorState error={error} retry={server.retry} />
+          )}
+          <div className="aits-body" data-loading={loading || undefined}>
+            {content}
+            {loading && hasRows && <LoadingOverlay skeleton={false} />}
+          </div>
+          {showPagination && <Pagination />}
+          {enableRowContextMenu && (
+            <RowActions
+              menu={rowMenu}
+              anchorRef={rowMenuAnchorRef}
+              dialog={rowDialog}
+              onCloseMenu={closeRowMenu}
+              onOpenDialog={openRowDialog}
+              onCloseDialog={closeRowDialog}
+            />
+          )}
+          <LiveRegion message={liveMessage} />
+        </ConditionalFormatProvider>
       </GridContext.Provider>
     </div>
   );
