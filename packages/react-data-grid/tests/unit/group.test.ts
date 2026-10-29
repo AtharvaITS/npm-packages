@@ -358,6 +358,8 @@ describe('row grouping', () => {
     expect(
       plain.items.every((item) => item.kind !== 'group' || item.aggregates === undefined),
     ).toBe(true);
+  });
+
   it('leaves the given indexes in place when no column is grouped', () => {
     const indexes = [3, 1, 0];
     const result = grouped(people, [{ field: 'name' }], {
