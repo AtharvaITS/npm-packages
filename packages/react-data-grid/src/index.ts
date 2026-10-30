@@ -13,6 +13,7 @@ export type {
   CardField,
   CellContext,
   CellEdit,
+  AggregateFunc,
   ColorScheme,
   ColumnDef,
   ColumnStateItem,

@@ -4,7 +4,7 @@ import type { DisplayItem, GroupDisplayItem } from '../../core/group';
 import { useGrid } from '../../state/GridContext';
 import { useMeasuredItemSize } from '../../virtual/useMeasuredItemSize';
 import { useVirtualRows } from '../../virtual/useVirtualRows';
-import { GroupSummary } from '../GroupSummary';
+import { GroupAggregateValues, GroupSummary } from '../GroupSummary';
 import { ListItem } from './ListItem';
 
 /** List view: stacked items; `list` semantics, or `listbox` when selection is on. */
@@ -184,6 +184,7 @@ function ListGroup({
       onClick={() => ctx.toggleGroup(item.key)}
     >
       <GroupSummary item={item} indent={false} />
+      <GroupAggregateValues item={item} />
     </div>
   );
 }
