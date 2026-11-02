@@ -315,6 +315,9 @@
     font-weight: 600;
     padding: 0.25rem 0.25rem 0.5rem;
   }
+  .aits-format-popup-label {
+    font-weight: 700;
+  }
   .aits-popover-actions {
     display: flex;
     gap: 0.5rem;
@@ -1353,6 +1356,103 @@
   }
   .aits-format-actions-end {
     justify-content: flex-end;
+  }
+  /* Each field is its own line. The label and that field's values stay on the line. */
+  .aits-popover.aits-format-editor.aits-format-row {
+    width: max-content;
+    min-width: min(22rem, calc(100vw - 16px));
+    max-width: min(36rem, calc(100vw - 16px));
+  }
+  .aits-popover.aits-format-panel.aits-format-row {
+    width: max-content;
+    min-width: 0;
+    max-width: min(32rem, calc(100vw - 16px));
+  }
+  .aits-format-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .aits-format-stack > .aits-format-field,
+  .aits-format-stack > .aits-format-color,
+  .aits-format-stack > .aits-format-weights,
+  .aits-format-editor .aits-format-field {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .aits-format-inline {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+  .aits-format-inline.aits-format-nowrap {
+    flex-flow: row nowrap;
+  }
+  .aits-format-row.aits-format-editor > .aits-export-fieldset .aits-input {
+    width: auto;
+  }
+  .aits-format-row.aits-format-editor > .aits-export-fieldset .aits-format-inline > .aits-input {
+    flex: 0 1 14rem;
+    width: 14rem;
+    max-width: 100%;
+  }
+  .aits-format-row .aits-format-values,
+  .aits-format-row .aits-format-field,
+  .aits-format-row .aits-format-color,
+  .aits-format-row .aits-format-weights {
+    margin-top: 0;
+    width: auto;
+    flex: 0 1 auto;
+    justify-content: flex-start;
+  }
+  .aits-format-row .aits-format-weights,
+  .aits-format-row .aits-format-weight-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .aits-format-editor .aits-format-weights,
+  .aits-format-editor .aits-format-weight-list {
+    flex-wrap: nowrap;
+  }
+  .aits-format-row.aits-format-editor > .aits-export-fieldset .aits-format-field .aits-input {
+    flex: 0 1 10rem;
+    width: 10rem;
+    min-width: 8rem;
+    max-width: 100%;
+  }
+  .aits-format-row.aits-format-editor > .aits-export-fieldset .aits-format-size .aits-input {
+    width: 5rem;
+    min-width: 5rem;
+    flex: none;
+  }
+  .aits-format-panel.aits-format-row .aits-format-rules {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .aits-format-panel.aits-format-row .aits-format-rules > .aits-export-legend {
+    flex: 1 0 100%;
+    margin-bottom: 0;
+  }
+  .aits-format-panel.aits-format-row .aits-format-rule {
+    flex: 1 1 18rem;
+    align-items: center;
+    border: 1px solid var(--aits-color-border);
+    border-radius: var(--aits-radius);
+  }
+  .aits-format-panel.aits-format-row .aits-format-rule-body {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.75rem;
+  }
+  .aits-format-panel.aits-format-row .aits-format-rule-actions {
+    flex-direction: row;
+    align-items: center;
   }
   .aits-row[data-formatted][data-selected] {
     background: var(--aits-cf-bg, var(--aits-color-selected-bg)) !important;

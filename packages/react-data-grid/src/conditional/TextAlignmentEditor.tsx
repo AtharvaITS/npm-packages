@@ -29,22 +29,23 @@ export function TextAlignmentEditor({
       onClose={onCancel}
       anchorRef={anchorRef}
       label={messages.textAlignment}
-      className="aits-format-editor"
+      className="aits-format-editor aits-format-row"
       alignEnd
     >
-      <div className="aits-popover-title">{messages.textAlignment}</div>
+      <div className="aits-popover-title aits-format-popup-label">{messages.textAlignment}</div>
       <fieldset className="aits-export-fieldset">
-        <legend className="aits-export-legend">{messages.textAlignment}</legend>
-        {TEXT_ALIGN_VALUES.map((value) => (
-          <label key={value} className="aits-enum-option">
-            <input
-              type="checkbox"
-              checked={draft.alignment === value}
-              onChange={() => setDraft({ alignment: value })}
-            />
-            <span>{messages.textAlignments[value]}</span>
-          </label>
-        ))}
+        <div className="aits-format-inline aits-format-nowrap">
+          {TEXT_ALIGN_VALUES.map((value) => (
+            <label key={value} className="aits-enum-option">
+              <input
+                type="checkbox"
+                checked={draft.alignment === value}
+                onChange={() => setDraft({ alignment: value })}
+              />
+              <span>{messages.textAlignments[value]}</span>
+            </label>
+          ))}
+        </div>
       </fieldset>
       <div className="aits-popover-actions aits-format-actions-end">
         <button type="button" className="aits-button" onClick={onCancel}>

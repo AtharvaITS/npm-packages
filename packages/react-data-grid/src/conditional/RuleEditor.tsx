@@ -107,7 +107,7 @@ export function RuleEditor({
       onClose={onCancel}
       anchorRef={anchorRef}
       label={title}
-      className="aits-format-editor"
+      className="aits-format-editor aits-format-row"
       alignEnd
     >
       <div className="aits-popover-title">{title}</div>
@@ -128,107 +128,117 @@ export function RuleEditor({
         </div>
       </fieldset>
       <fieldset className="aits-export-fieldset">
-        <legend className="aits-export-legend">{messages.formatOperator}</legend>
-        <select
-          className="aits-input"
-          aria-label={messages.formatOperator}
-          value={draft.operator}
-          onChange={(event) =>
-            patch({ operator: event.target.value as FormatOperator | '', value: '', value2: '' })
-          }
-        >
-          <option value="">{messages.formatOperatorPlaceholder}</option>
-          {FORMAT_OPERATORS.map((operator) => (
-            <option key={operator} value={operator}>
-              {messages.formatOperators[operator]}
-            </option>
-          ))}
-        </select>
-        {valueCount >= 1 && (
-          <div className="aits-format-values">
-            <input
+        <div className="aits-format-field">
+          <span>{messages.formatOperator}</span>
+          <div className="aits-format-inline aits-format-nowrap">
+            <select
               className="aits-input"
-              type={inputType}
-              aria-label={messages.formatValue}
-              value={draft.value}
-              onChange={(event) => patch({ value: event.target.value })}
-            />
-            {valueCount === 2 && (
-              <>
-                <span className="aits-filter-and">{messages.formatValueTo}</span>
+              aria-label={messages.formatOperator}
+              value={draft.operator}
+              onChange={(event) =>
+                patch({ operator: event.target.value as FormatOperator | '', value: '', value2: '' })
+              }
+            >
+              <option value="">{messages.formatOperatorPlaceholder}</option>
+              {FORMAT_OPERATORS.map((operator) => (
+                <option key={operator} value={operator}>
+                  {messages.formatOperators[operator]}
+                </option>
+              ))}
+            </select>
+            {valueCount >= 1 && (
+              <div className="aits-format-values">
                 <input
                   className="aits-input"
                   type={inputType}
-                  aria-label={`${messages.formatValue} 2`}
-                  value={draft.value2}
-                  onChange={(event) => patch({ value2: event.target.value })}
+                  aria-label={messages.formatValue}
+                  value={draft.value}
+                  onChange={(event) => patch({ value: event.target.value })}
                 />
-              </>
+                {valueCount === 2 && (
+                  <>
+                    <span className="aits-filter-and">{messages.formatValueTo}</span>
+                    <input
+                      className="aits-input"
+                      type={inputType}
+                      aria-label={`${messages.formatValue} 2`}
+                      value={draft.value2}
+                      onChange={(event) => patch({ value2: event.target.value })}
+                    />
+                  </>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </fieldset>
       <fieldset className="aits-export-fieldset">
-        <legend className="aits-export-legend">{messages.formatScope}</legend>
-        {(['cell', 'row'] as const).map((scope) => (
-          <label key={scope} className="aits-enum-option">
-            <input
-              type="radio"
-              name={scopeName}
-              checked={draft.scope === scope}
-              onChange={() => patch({ scope })}
-            />
-            <span>{scope === 'cell' ? messages.formatScopeCell : messages.formatScopeRow}</span>
-          </label>
-        ))}
+        <div className="aits-format-field">
+          <span>{messages.formatScope}</span>
+          <div className="aits-format-inline aits-format-nowrap" role="radiogroup" aria-label={messages.formatScope}>
+            {(['cell', 'row'] as const).map((scope) => (
+              <label key={scope} className="aits-enum-option">
+                <input
+                  type="radio"
+                  name={scopeName}
+                  checked={draft.scope === scope}
+                  onChange={() => patch({ scope })}
+                />
+                <span>{scope === 'cell' ? messages.formatScopeCell : messages.formatScopeRow}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </fieldset>
       <fieldset className="aits-export-fieldset">
         <legend className="aits-export-legend">{messages.formatPreview}</legend>
-        <ColorField
-          label={messages.formatBackground}
-          applyLabel={messages.formatUseColor}
-          value={draft.backgroundColor}
-          fallback={DEFAULT_BACKGROUND}
-          onChange={(backgroundColor) => patch({ backgroundColor })}
-        />
-        <ColorField
-          label={messages.formatText}
-          applyLabel={messages.formatUseColor}
-          value={draft.textColor}
-          fallback={DEFAULT_TEXT}
-          onChange={(textColor) => patch({ textColor })}
-        />
-        <label className="aits-format-field">
-          <span>{messages.formatFontWeight}</span>
-          <select
-            className="aits-input"
-            aria-label={messages.formatFontWeight}
-            value={draft.fontWeight}
-            onChange={(event) => patch({ fontWeight: event.target.value as FormatFontWeight })}
-          >
-            {FONT_WEIGHTS.map((weight) => (
-              <option key={weight} value={weight}>
-                {messages.formatFontWeights[weight]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="aits-format-field">
-          <span>{messages.formatFontStyle}</span>
-          <select
-            className="aits-input"
-            aria-label={messages.formatFontStyle}
-            value={draft.fontStyle}
-            style={fontStyleCss(draft.fontStyle)}
-            onChange={(event) => patch({ fontStyle: event.target.value as FormatFontStyle })}
-          >
-            {FONT_STYLES.map((fontStyle) => (
-              <option key={fontStyle} value={fontStyle} style={fontStyleCss(fontStyle)}>
-                {messages.formatFontStyles[fontStyle]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="aits-format-stack">
+          <ColorField
+            label={messages.formatBackground}
+            applyLabel={messages.formatUseColor}
+            value={draft.backgroundColor}
+            fallback={DEFAULT_BACKGROUND}
+            onChange={(backgroundColor) => patch({ backgroundColor })}
+          />
+          <ColorField
+            label={messages.formatText}
+            applyLabel={messages.formatUseColor}
+            value={draft.textColor}
+            fallback={DEFAULT_TEXT}
+            onChange={(textColor) => patch({ textColor })}
+          />
+          <label className="aits-format-field">
+            <span>{messages.formatFontWeight}</span>
+            <select
+              className="aits-input"
+              aria-label={messages.formatFontWeight}
+              value={draft.fontWeight}
+              onChange={(event) => patch({ fontWeight: event.target.value as FormatFontWeight })}
+            >
+              {FONT_WEIGHTS.map((weight) => (
+                <option key={weight} value={weight}>
+                  {messages.formatFontWeights[weight]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="aits-format-field">
+            <span>{messages.formatFontStyle}</span>
+            <select
+              className="aits-input"
+              aria-label={messages.formatFontStyle}
+              value={draft.fontStyle}
+              style={fontStyleCss(draft.fontStyle)}
+              onChange={(event) => patch({ fontStyle: event.target.value as FormatFontStyle })}
+            >
+              {FONT_STYLES.map((fontStyle) => (
+                <option key={fontStyle} value={fontStyle} style={fontStyleCss(fontStyle)}>
+                  {messages.formatFontStyles[fontStyle]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </fieldset>
       {error && (
         <p className="aits-export-notice" role="alert">
