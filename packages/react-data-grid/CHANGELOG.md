@@ -1,5 +1,11 @@
 # @atharvaits/react-data-grid
 
+## 1.0.11
+
+### Patch Changes
+
+- fix format popup ui
+
 ## 1.0.10
 
 ### Patch Changes

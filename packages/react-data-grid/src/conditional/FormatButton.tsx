@@ -99,7 +99,7 @@ export function FormatButton() {
         onClose={() => setOpen(false)}
         anchorRef={button}
         label={messages.formatTitle}
-        className="aits-format-panel"
+        className="aits-format-panel aits-format-row"
         alignEnd
       >
         <div className="aits-popover-title">{messages.formatTitle}</div>
